@@ -3,10 +3,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/phase1_theme.dart';
 import '../../widgets/background/code_background.dart';
 import '../../services/story_state_service.dart';
+import '../../services/tts_service.dart';
 import '../../core/mission_validator.dart';
 import '../../widgets/phase1/holographic_nova.dart';
 import '../../widgets/phase1/code_editor_panel.dart';
 import '../../widgets/phase1/guide_panel.dart';
+import 'mission_title_screen.dart';
 
 class Mission1Screen extends StatefulWidget {
   const Mission1Screen({super.key});
@@ -55,6 +57,7 @@ class _Mission1ScreenState extends State<Mission1Screen> {
       _novaDialogue = _introLines[_introLineIndex];
       _isIntroTyping = true;
     });
+    TTSService().speak(_novaDialogue);
   }
 
   void _onNovaTypingFinished() {
@@ -76,6 +79,8 @@ class _Mission1ScreenState extends State<Mission1Screen> {
             _isUIUnlocked = true;
             _novaDialogue = "Enter the command to print \"System Online\".";
           });
+          // Speak Nova's line + The Guide Panel content
+          TTSService().speak("${_novaDialogue} Use the print command to broadcast a message.");
         }
       });
     }
@@ -103,6 +108,7 @@ class _Mission1ScreenState extends State<Mission1Screen> {
         _novaDialogue = "Output does not match. We need exactly \"System Online\".";
       }
     });
+    TTSService().speak(_novaDialogue);
   }
 
   void _handleSuccess() async {
@@ -111,6 +117,7 @@ class _Mission1ScreenState extends State<Mission1Screen> {
       _novaDialogue = "Signal received. Communication restored. Well done, Engineer.";
       _isUIUnlocked = false; // Lock UI
     });
+    TTSService().speak(_novaDialogue);
 
     // Save Progress
     await StoryStateService().completeMission(1, 50);
@@ -125,6 +132,10 @@ class _Mission1ScreenState extends State<Mission1Screen> {
         _hintLevel++;
         _novaDialogue = "Analyzing... sending hint data.";
       });
+      // Speak filler first? Or speak the hint?
+      // GuidePanel shows the hint, NOVA speaks it?
+      // "Hint: You need to display text."
+      TTSService().speak("Hint: ${_hints[_hintLevel - 1]}");
     }
   }
 
@@ -137,6 +148,7 @@ class _Mission1ScreenState extends State<Mission1Screen> {
       _novaDialogue = "System reset. Ready for input.";
       _isUIUnlocked = true;
     });
+    TTSService().speak(_novaDialogue);
   }
 
   @override
@@ -278,20 +290,78 @@ class _Mission1ScreenState extends State<Mission1Screen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // Run Button
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _isUIUnlocked ? _runCode : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Phase1Theme.successGreen.withValues(alpha: 0.2),
-                                    side: BorderSide(color: Phase1Theme.successGreen),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              if (!_isSuccess)
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _isUIUnlocked ? _runCode : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Phase1Theme.successGreen.withValues(alpha: 0.2),
+                                      side: BorderSide(color: Phase1Theme.successGreen),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    child: Text(
+                                      "RUN SEQUENCE",
+                                      style: Phase1Theme.sciFiFont.copyWith(color: Phase1Theme.successGreen),
+                                    ),
                                   ),
-                                  child: Text(
-                                    "RUN SEQUENCE",
-                                    style: Phase1Theme.sciFiFont.copyWith(color: Phase1Theme.successGreen),
+                                )
+                                else
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pushReplacement(
+                                                MaterialPageRoute(
+                                                  builder: (_) => const MissionTitleScreen(
+                                                    missionId: 2,
+                                                    title: "ENERGY LABELING",
+                                                    nextRoute: '/story/python/mission2',
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Phase1Theme.cyanGlow.withValues(alpha: 0.2),
+                                              side: BorderSide(color: Phase1Theme.cyanGlow),
+                                              padding: EdgeInsets.zero,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text("NEXT", style: Phase1Theme.sciFiFont.copyWith(color: Phase1Theme.cyanGlow, fontSize: 12)),
+                                                const SizedBox(width: 4),
+                                                Icon(Icons.arrow_forward, color: Phase1Theme.cyanGlow, size: 14),
+                                              ],
+                                            ),
+                                          ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(begin: const Offset(1.0, 1.0), end: const Offset(1.03, 1.03), duration: 1.seconds),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Expanded(
+                                          child: OutlinedButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            style: OutlinedButton.styleFrom(
+                                              side: BorderSide(color: Colors.white24),
+                                              padding: EdgeInsets.zero,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text("MAP", style: Phase1Theme.sciFiFont.copyWith(color: Colors.white70, fontSize: 12)),
+                                                const SizedBox(width: 4),
+                                                Icon(Icons.map, color: Colors.white70, size: 14),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ),
                               const SizedBox(height: 8),
                               
                               // Hint & Reset Row

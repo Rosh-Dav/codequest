@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/level_manager.dart';
 
 class StoryStateService {
   static const String _keyStoryStarted = 'phase1_storyStarted';
@@ -49,11 +50,14 @@ class StoryStateService {
     int currentXp = xp;
     await _prefs?.setInt(_keyXP, currentXp + earnedXp);
 
-    // Update Progress
+    // Update Progress in Story Service
     if (missionId >= maxMission) {
       await _prefs?.setInt(_keyMaxMission, missionId + 1);
       await _prefs?.setInt(_keyCurrentMission, missionId + 1);
     }
+    
+    // Update Level Manager (Unlocks next level)
+    await LevelManager().completeLevel(missionId);
   }
 
   Future<void> resetStory() async {

@@ -8,15 +8,30 @@ import 'services/gemini_service.dart';
 import 'services/local_storage_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/phase1/system_awakening_screen.dart';
+import 'screens/level_map_screen.dart';
 import 'screens/phase1/mission1_screen.dart';
+import 'screens/phase1/mission2_screen.dart';
+import 'screens/phase1/mission3_screen.dart';
+import 'screens/phase1/mission4_screen.dart';
+import 'screens/phase1/mission5_screen.dart';
+import 'screens/phase1/mission6_screen.dart';
+import 'screens/phase1/mission7_screen.dart';
+import 'screens/phase1/mission8_screen.dart';
+import 'screens/phase1/mission9_screen.dart';
+import 'screens/phase1/mission10_screen.dart';
+import 'screens/phase1/mission11_screen.dart';
+import 'screens/phase1/phase1_status_screen.dart';
+import 'screens/phase1/phase1_mid_status_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/theme.dart';
+import 'services/tts_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize local storage (Required for StoryTriggerManager)
   await LocalStorageService().init();
+  await TTSService().init(); // Initialize Text-to-Speech
 
   try {
     await dotenv.load(fileName: ".env");
@@ -64,7 +79,20 @@ class CodeQuestApp extends StatelessWidget {
       // Named routes for navigation
       routes: {
         '/story/python/phase1/opening': (context) => const SystemAwakeningScreen(),
-        '/story/python/mission': (context) => const Mission1Screen(),
+        '/story/level_map': (context) => const LevelMapScreen(),
+        '/story/python/mission1': (context) => const Mission1Screen(),
+        '/story/python/mission2': (context) => const Mission2Screen(),
+        '/story/python/mission3': (context) => const Mission3Screen(), 
+        '/story/python/mission4': (context) => const Mission4Screen(),
+        '/story/python/mission5': (context) => const Mission5Screen(),
+        '/story/python/mission6': (context) => const Mission6Screen(),
+        '/story/python/mission7': (context) => const Mission7Screen(),
+        '/story/python/mission8': (context) => const Mission8Screen(),
+        '/story/python/mission9': (context) => const Mission9Screen(),
+        '/story/python/mission10': (context) => const Mission10Screen(),
+        '/story/python/mission11': (context) => const Mission11Screen(),
+        '/story/phase1/status': (context) => const Phase1StatusScreen(),
+        '/story/phase1/mid-status': (context) => const Phase1MidStatusScreen(),
         '/home': (context) => const HomeScreen(),
       },
     );

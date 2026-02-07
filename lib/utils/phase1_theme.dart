@@ -7,6 +7,9 @@ class Phase1Theme {
   static const Color purpleGlow = Color(0xFF7C4DFF);
   static const Color errorRed = Color(0xFFFF4C4C);
   static const Color successGreen = Color(0xFF00FF88);
+  static const Color deepSpaceBlue = Color(0xFF0A0E21);
+  static const Color purplish = Color(0xFF9D50BB);
+
   
   // Gradients
   static const LinearGradient coreGradient = LinearGradient(

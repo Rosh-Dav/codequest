@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/phase1_theme.dart';
 import '../../widgets/background/code_background.dart';
 import '../../services/story_state_service.dart';
+import '../../services/tts_service.dart';
 import '../../widgets/phase1/holographic_nova.dart';
 import '../../widgets/phase1/system_overlay.dart';
 
@@ -52,6 +53,8 @@ class _SystemAwakeningScreenState extends State<SystemAwakeningScreen> with Tick
       _isOverlayComplete = true;
       _sequenceStep = 2; // Trigger Dialogue
     });
+    // Speak first line
+    TTSService().speak(_dialogueLines[_dialogueIndex]);
   }
 
   void _onDialogueTyped() {
@@ -62,6 +65,7 @@ class _SystemAwakeningScreenState extends State<SystemAwakeningScreen> with Tick
       if (!mounted) return;
       if (_dialogueIndex < _dialogueLines.length - 1) {
         setState(() => _dialogueIndex++);
+        TTSService().speak(_dialogueLines[_dialogueIndex]); // Speak next line
       } else {
         setState(() {
           _isDialogueComplete = true;
@@ -83,14 +87,8 @@ class _SystemAwakeningScreenState extends State<SystemAwakeningScreen> with Tick
 
     if (!mounted) return;
 
-    // Navigate to Mission 1 (using the generic route for now, assuming implementation)
-    // The previously implemented `PythonMissionScreen` was deleted, so I should probably
-    // navigate to home or a new placeholder if the user didn't ask for generic mission content.
-    // BUT the prompt says "Transition to Mission 1... Then navigate to Mission 1 screen."
-    // and "DO NOT generate any mission content."
-    // So I will navigate to a placeholder or Home for now, or a specific route to be defined.
-    // I'll use '/story/python/mission' and ensure main.dart handles it (even if empty).
-    Navigator.of(context).pushReplacementNamed('/story/python/mission');
+    // Navigate to Level Map
+    Navigator.of(context).pushReplacementNamed('/story/level_map');
   }
 
   @override
@@ -243,7 +241,7 @@ class _SystemAwakeningScreenState extends State<SystemAwakeningScreen> with Tick
                     children: [
                       const CircularProgressIndicator(color: Phase1Theme.cyanGlow),
                       const SizedBox(height: 20),
-                      Text("Loading Mission 1...", style: Phase1Theme.sciFiFont),
+                      Text("Loading Mission Hub...", style: Phase1Theme.sciFiFont),
                     ],
                   ),
                 ),
