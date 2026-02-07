@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../utils/bytestar_theme.dart';
 
 import 'dart:math' as math;
 

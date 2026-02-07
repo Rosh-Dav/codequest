@@ -24,6 +24,7 @@ class _StoryModeSelectionScreenState extends State<StoryModeSelectionScreen> {
   bool _isTransitioning = false;
 
   void _selectStoryMode(String storyMode) {
+    if (_isTransitioning) return;
     setState(() {
       _selectedStoryMode = storyMode;
       _isTransitioning = true;

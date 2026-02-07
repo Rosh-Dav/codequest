@@ -5,12 +5,14 @@ class NeonInput extends StatefulWidget {
   final String hintText;
   final IconData prefixIcon;
   final bool obscureText;
+  final TextEditingController? controller;
 
   const NeonInput({
     super.key,
     required this.hintText,
     required this.prefixIcon,
     this.obscureText = false,
+    this.controller,
   });
 
   @override
@@ -39,6 +41,7 @@ class _NeonInputState extends State<NeonInput> {
         },
         child: TextFormField(
           obscureText: widget.obscureText,
+          controller: widget.controller,
           style: AppTheme.bodyStyle.copyWith(fontSize: 15),
           cursorColor: AppTheme.accentColor,
           decoration: InputDecoration(

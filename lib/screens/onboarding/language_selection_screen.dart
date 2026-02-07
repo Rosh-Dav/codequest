@@ -22,6 +22,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   bool _isTransitioning = false;
 
   void _selectLanguage(String language) {
+    if (_isTransitioning) return;
     setState(() {
       _selectedLanguage = language;
       _isTransitioning = true;

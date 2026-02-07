@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../../utils/bytestar_theme.dart';
 import '../../models/bytestar_data.dart';
 import 'space_backgrounds.dart';
 

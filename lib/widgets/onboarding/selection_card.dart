@@ -40,8 +40,11 @@ class _SelectionCardState extends State<SelectionCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.identity()
-            ..scale(_isHovering || widget.isSelected ? 1.05 : 1.0),
+          transform: Matrix4.diagonal3Values(
+            _isHovering || widget.isSelected ? 1.05 : 1.0,
+            _isHovering || widget.isSelected ? 1.05 : 1.0,
+            1.0,
+          ),
           child: Container(
             width: 280,
             height: 320,
