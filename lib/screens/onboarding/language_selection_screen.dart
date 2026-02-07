@@ -3,8 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/theme.dart';
 import '../../widgets/background/code_background.dart';
 import '../../widgets/onboarding/selection_card.dart';
-import '../../widgets/onboarding/python_logo.dart';
-import '../../widgets/onboarding/c_logo.dart';
 import 'story_mode_selection_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
@@ -91,11 +89,16 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Python Card with custom logo
+                    // Python Card with logo asset
                     SelectionCard(
                       title: 'Python',
                       description: 'Beginner-friendly, versatile, and powerful for data science & AI',
-                      customLogo: const PythonLogo(size: 100),
+                      customLogo: Image.asset(
+                        'assets/images/python_custom.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                      ),
                       accentColor: AppTheme.syntaxBlue,
                       isSelected: _selectedLanguage == 'Python',
                       onTap: () => _selectLanguage('Python'),
@@ -103,11 +106,16 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
 
                     const SizedBox(width: 40),
 
-                    // C Programming Card with custom logo
+                    // C Programming Card with logo asset
                     SelectionCard(
                       title: 'C',
                       description: 'System-level programming, performance-focused, foundational language',
-                      customLogo: const CLogo(size: 100),
+                      customLogo: Image.asset(
+                        'assets/images/c_custom.png',
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.contain,
+                      ),
                       accentColor: AppTheme.syntaxGreen,
                       isSelected: _selectedLanguage == 'C',
                       onTap: () => _selectLanguage('C'),

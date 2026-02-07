@@ -20,83 +20,66 @@ class PythonLogo extends StatelessWidget {
 class PythonLogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final double width = size.width;
-    final double height = size.height;
-    
+    final double w = size.width;
+    final double h = size.height;
+
     // Python official colors
     final Paint bluePaint = Paint()
       ..color = const Color(0xFF3776AB)
       ..style = PaintingStyle.fill;
-    
+
     final Paint yellowPaint = Paint()
       ..color = const Color(0xFFFFD43B)
       ..style = PaintingStyle.fill;
-    
+
     final Paint whitePaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
-    // Draw blue snake (top-left) - more accurate shape
-    Path bluePath = Path();
-    bluePath.moveTo(width * 0.25, height * 0.15);
-    bluePath.cubicTo(
-      width * 0.15, height * 0.15,
-      width * 0.1, height * 0.2,
-      width * 0.1, height * 0.3,
+    // Build two interlocking rounded shapes (closer to official mark)
+    final double r = w * 0.18;
+    final double inset = w * 0.08;
+    final Rect topRect = Rect.fromLTWH(
+      inset,
+      inset,
+      w - inset * 1.8,
+      h * 0.48,
     );
-    bluePath.lineTo(width * 0.1, height * 0.45);
-    bluePath.cubicTo(
-      width * 0.1, height * 0.48,
-      width * 0.12, height * 0.5,
-      width * 0.15, height * 0.5,
+    final Rect bottomRect = Rect.fromLTWH(
+      inset * 1.2,
+      h * 0.44,
+      w - inset * 1.8,
+      h * 0.48,
     );
-    bluePath.lineTo(width * 0.45, height * 0.5);
-    bluePath.lineTo(width * 0.45, height * 0.3);
-    bluePath.cubicTo(
-      width * 0.45, height * 0.2,
-      width * 0.4, height * 0.15,
-      width * 0.3, height * 0.15,
-    );
-    bluePath.lineTo(width * 0.25, height * 0.15);
-    bluePath.close();
-    canvas.drawPath(bluePath, bluePaint);
 
-    // Draw yellow snake (bottom-right) - more accurate shape
-    Path yellowPath = Path();
-    yellowPath.moveTo(width * 0.75, height * 0.85);
-    yellowPath.cubicTo(
-      width * 0.85, height * 0.85,
-      width * 0.9, height * 0.8,
-      width * 0.9, height * 0.7,
+    // Top blue "snake"
+    final RRect topRRect = RRect.fromRectAndRadius(topRect, Radius.circular(r));
+    final Path topPath = Path()..addRRect(topRRect);
+    // Carve out inner notch (bottom-right)
+    final Rect topNotch = Rect.fromLTWH(w * 0.55, h * 0.30, w * 0.28, h * 0.22);
+    final Path topNotchPath = Path()
+      ..addRRect(RRect.fromRectAndRadius(topNotch, Radius.circular(w * 0.08)));
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, topPath, topNotchPath),
+      bluePaint,
     );
-    yellowPath.lineTo(width * 0.9, height * 0.55);
-    yellowPath.cubicTo(
-      width * 0.9, height * 0.52,
-      width * 0.88, height * 0.5,
-      width * 0.85, height * 0.5,
-    );
-    yellowPath.lineTo(width * 0.55, height * 0.5);
-    yellowPath.lineTo(width * 0.55, height * 0.7);
-    yellowPath.cubicTo(
-      width * 0.55, height * 0.8,
-      width * 0.6, height * 0.85,
-      width * 0.7, height * 0.85,
-    );
-    yellowPath.lineTo(width * 0.75, height * 0.85);
-    yellowPath.close();
-    canvas.drawPath(yellowPath, yellowPaint);
 
-    // Draw white eyes
-    canvas.drawCircle(
-      Offset(width * 0.25, height * 0.25),
-      width * 0.04,
-      whitePaint,
+    // Bottom yellow "snake"
+    final RRect bottomRRect =
+        RRect.fromRectAndRadius(bottomRect, Radius.circular(r));
+    final Path bottomPath = Path()..addRRect(bottomRRect);
+    // Carve out inner notch (top-left)
+    final Rect bottomNotch = Rect.fromLTWH(w * 0.18, h * 0.48, w * 0.28, h * 0.22);
+    final Path bottomNotchPath = Path()
+      ..addRRect(RRect.fromRectAndRadius(bottomNotch, Radius.circular(w * 0.08)));
+    canvas.drawPath(
+      Path.combine(PathOperation.difference, bottomPath, bottomNotchPath),
+      yellowPaint,
     );
-    canvas.drawCircle(
-      Offset(width * 0.75, height * 0.75),
-      width * 0.04,
-      whitePaint,
-    );
+
+    // Eyes (white dots)
+    canvas.drawCircle(Offset(w * 0.30, h * 0.28), w * 0.04, whitePaint);
+    canvas.drawCircle(Offset(w * 0.70, h * 0.72), w * 0.04, whitePaint);
   }
 
   @override

@@ -72,18 +72,39 @@ class CLogoPainter extends CustomPainter {
     hexPath.close();
     canvas.drawPath(hexPath, hexagonPaint);
 
-    // Draw white 'C' letter with better styling
+    // Inner hexagon border (lighter blue)
+    final Paint innerBorderPaint = Paint()
+      ..color = const Color(0xFF8DB3E2).withValues(alpha: 0.9)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width * 0.035;
+
+    final double innerRadius = radius * 0.74;
+    Path innerHex = Path();
+    for (int i = 0; i < 6; i++) {
+      double angle = (math.pi / 3) * i - math.pi / 2;
+      double x = center.dx + innerRadius * math.cos(angle);
+      double y = center.dy + innerRadius * math.sin(angle);
+      if (i == 0) {
+        innerHex.moveTo(x, y);
+      } else {
+        innerHex.lineTo(x, y);
+      }
+    }
+    innerHex.close();
+    canvas.drawPath(innerHex, innerBorderPaint);
+
+    // Draw white 'C' letter
     final Paint cPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = width * 0.15
+      ..strokeWidth = width * 0.16
       ..strokeCap = StrokeCap.round;
 
     Path cPath = Path();
     cPath.addArc(
-      Rect.fromCircle(center: center, radius: radius * 0.45),
-      math.pi * 0.65,
-      math.pi * 1.7,
+      Rect.fromCircle(center: center, radius: radius * 0.48),
+      math.pi * 0.55,
+      math.pi * 1.9,
     );
     canvas.drawPath(cPath, cPaint);
   }
