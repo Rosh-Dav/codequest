@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../utils/theme.dart';
+import '../../utils/bytestar_theme.dart';
 import '../../widgets/background/code_background.dart';
+import '../../widgets/auth/gaming_button.dart';
 import '../../widgets/onboarding/ai_mentor_widget.dart';
+import '../../widgets/bytestar/nova_hologram.dart';
 import '../login_screen.dart';
+import '../bytestar/mission_map_screen.dart';
+import '../runecity/rune_city_dashboard.dart';
 
 class MentorIntroductionScreen extends StatefulWidget {
   final String username;
@@ -34,27 +39,29 @@ class _MentorIntroductionScreenState extends State<MentorIntroductionScreen> {
   }
 
   Future<void> _initMentor() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future.delayed(const Duration(milliseconds: 1000));
     
-    // Configure TTS for natural female voice
+    // Configure TTS
     await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setVoice({"name": "Google US English", "locale": "en-US"});
-    
-    if (widget.selectedStoryMode == 'Rune City Quest') {
-      // Luna - Warm, friendly mentor
-      await _flutterTts.setPitch(1.1); // Slightly higher for female voice
-      await _flutterTts.setSpeechRate(0.48); // Slower, more natural
-    } else {
-      // Stella - Energetic, motivational coach
-      await _flutterTts.setPitch(1.15); // Higher pitch for energetic feel
-      await _flutterTts.setSpeechRate(0.52); // Slightly faster but still natural
+    // Attempt to pick a good voice, but fallback to default
+    try {
+      if (widget.selectedStoryMode == 'ByteStar Arena') {
+        // Sci-fi NOVA voice - slightly higher, faster
+        await _flutterTts.setPitch(1.2); 
+        await _flutterTts.setSpeechRate(0.55);
+      } else {
+        // Fantasy Luna voice - standard, warm
+        await _flutterTts.setPitch(1.0);
+        await _flutterTts.setSpeechRate(0.5);
+      }
+    } catch (e) {
+      debugPrint('TTS Error: $e');
     }
 
     // Speak greeting
-    setState(() => _isSpeaking = true);
+    if (mounted) setState(() => _isSpeaking = true);
     await _speak(_getGreeting());
     
-    await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       setState(() {
         _isSpeaking = false;
@@ -63,27 +70,45 @@ class _MentorIntroductionScreenState extends State<MentorIntroductionScreen> {
     }
   }
 
+  String get _mentorName {
+    if (widget.selectedStoryMode == 'Rune City Quest') return 'Luna';
+    if (widget.selectedStoryMode == 'ByteStar Arena') return 'NOVA';
+    return 'Guide';
+  }
+
   String _getGreeting() {
-    final mentorName = widget.selectedStoryMode == 'Rune City Quest'
-        ? 'Luna'
-        : 'Stella';
+    if (widget.selectedStoryMode == 'ByteStar Arena') {
+      return "Welcome to the Arena, Cadet ${widget.username}. I am $_mentorName, your tactical AI. "
+          "You've accessed the ${widget.selectedLanguage} systems. Prepare for training.";
+    }
     
-    return "Welcome ${widget.username}! I'm $mentorName, your coding mentor. "
-        "You've chosen ${widget.selectedLanguage} and entered ${widget.selectedStoryMode}. "
-        "I'll guide you through your coding journey. Let's begin!";
+    return "Welcome ${widget.username}! I am $_mentorName, your guide in Rune City. "
+        "Together we will master the arts of ${widget.selectedLanguage}. Let our journey begin!";
   }
 
   Future<void> _speak(String text) async {
     await _flutterTts.speak(text);
   }
 
-  void _continue() {
-    // TODO: Navigate to dashboard
-    // For now, go back to login
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+  void _beginJourney() {
+    // Handle both "Byte Star Arena" (UI) and "ByteStar Arena" (Internal)
+    if (widget.selectedStoryMode == 'Byte Star Arena' || widget.selectedStoryMode == 'ByteStar Arena') {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => MissionMapScreen(username: widget.username),
+        ),
+      );
+    } else {
+      // Navigate to Rune City Dashboard
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => RuneCityDashboard(
+            username: widget.username,
+            selectedLanguage: widget.selectedLanguage,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -94,21 +119,30 @@ class _MentorIntroductionScreenState extends State<MentorIntroductionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isByteStar = widget.selectedStoryMode == 'ByteStar Arena';
+    
     return Scaffold(
-      backgroundColor: AppTheme.ideBackground,
+      backgroundColor: isByteStar ? ByteStarTheme.primary : AppTheme.ideBackground,
       body: Stack(
         children: [
-          // Animated Background
-          const Positioned.fill(
-            child: CodeBackground(),
-          ),
-
-          // Dimmed Overlay
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.5),
-            ),
-          ).animate().fadeIn(duration: 600.ms),
+          // Background
+          if (isByteStar)
+             // Starfield for ByteStar (using simple color for now, can enhance)
+             Positioned.fill(
+               child: Container(
+                 decoration: const BoxDecoration(
+                   gradient: LinearGradient(
+                     begin: Alignment.topCenter,
+                     end: Alignment.bottomCenter,
+                     colors: [ByteStarTheme.primary, ByteStarTheme.secondary],
+                   ),
+                 ),
+               ),
+             )
+          else
+             const Positioned.fill(
+               child: CodeBackground(),
+             ),
 
           // Content
           SafeArea(
@@ -116,47 +150,63 @@ class _MentorIntroductionScreenState extends State<MentorIntroductionScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // AI Mentor
-                  AIMentorWidget(
-                    storyMode: widget.selectedStoryMode,
-                    greeting: _getGreeting(),
-                    showWaveform: _isSpeaking,
+                  const Spacer(),
+
+                  // Mentor Avatar
+                  if (isByteStar)
+                    NovaHologram(size: 180, isTalking: _isSpeaking)
+                  else
+                    AIMentorWidget(
+                      storyMode: widget.selectedStoryMode, // Pass mode to pick color
+                      // We can pass empty greeting since we handle speech here
+                      greeting: '', 
+                      showWaveform: _isSpeaking,
+                    ),
+
+                  const SizedBox(height: 40),
+
+                  // Greeting Text Container
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      children: [
+                         Text(
+                          isByteStar ? 'SYSTEM INITIALIZED' : 'JOURNEY BEGINS',
+                          style: (isByteStar ? ByteStarTheme.code : AppTheme.codeStyle).copyWith(
+                            letterSpacing: 2,
+                            fontSize: 14,
+                            color: isByteStar ? ByteStarTheme.accent : AppTheme.syntaxComment,
+                          ),
+                        ).animate().fadeIn(duration: 800.ms),
+                        
+                        const SizedBox(height: 16),
+                        
+                        Text(
+                          _getGreeting(),
+                          style: (isByteStar ? ByteStarTheme.body : AppTheme.headingStyle).copyWith(
+                            fontSize: 20,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ).animate(delay: 500.ms).fadeIn(),
+                      ],
+                    ),
                   ),
 
-                  const SizedBox(height: 60),
+                  const Spacer(),
 
                   // Continue Button
                   if (_showButton)
-                    ElevatedButton(
-                      onPressed: _continue,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: widget.selectedStoryMode == 'Rune City Quest'
-                            ? AppTheme.syntaxYellow
-                            : AppTheme.syntaxBlue,
-                        foregroundColor: AppTheme.ideBackground,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 48,
-                          vertical: 20,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 40),
+                      child: GamingButton(
+                        text: isByteStar ? 'ENTER ARENA' : 'BEGIN JOURNEY',
+                        onPressed: _beginJourney,
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text(
-                            'Begin Journey',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.arrow_forward, size: 24),
-                        ],
-                      ),
-                    ).animate().fadeIn().scale(),
+                    ).animate().fadeIn().slideY(begin: 0.5, end: 0),
+                  
+                  if (!_showButton)
+                     const SizedBox(height: 90), // Placeholder for button height
                 ],
               ),
             ),

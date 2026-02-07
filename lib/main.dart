@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'services/gemini_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'utils/theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await dotenv.load(fileName: ".env");
+    // Initialize Gemini Service
+    if (dotenv.env['GEMINI_API_KEY'] != null) {
+      GeminiService().init(dotenv.env['GEMINI_API_KEY']!);
+    }
+  } catch (e) {
+    debugPrint("Warning: Failed to load .env file: $e");
+    // Continue running app even if env fails
+  }
+  
   runApp(const CodeQuestApp());
 }
 
