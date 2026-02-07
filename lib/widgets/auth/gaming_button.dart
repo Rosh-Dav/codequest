@@ -3,16 +3,18 @@ import '../../utils/theme.dart';
 
 class GamingButton extends StatefulWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color? backgroundColor;
   final Color? textColor;
+  final bool isLoading;
 
   const GamingButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.backgroundColor,
     this.textColor,
+    this.isLoading = false,
   });
 
   @override
@@ -60,17 +62,30 @@ class _GamingButtonState extends State<GamingButton> with SingleTickerProviderSt
                 ),
             ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-               Icon(Icons.play_arrow_rounded, color: widget.textColor ?? Colors.white),
-               const SizedBox(width: 8),
-               Text(
-                widget.text,
-                style: AppTheme.buttonStyle.copyWith(color: widget.textColor ?? Colors.white),
-              ),
-            ],
-          ),
+          child: widget.isLoading
+              ? const Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.play_arrow_rounded,
+                        color: widget.textColor ?? Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.text,
+                      style: AppTheme.buttonStyle
+                          .copyWith(color: widget.textColor ?? Colors.white),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

@@ -39,8 +39,21 @@ enum SceneType {
   none,
   deepSpace,     // Generic galaxy view
   darkSpaceship, // M1: Emergency lights, dark
-  engineRoom,    // M2: Blue flickers
-  cockpit,       // M3-M6 etc
+  engineRoom,    // Legacy/Rune City
+  cockpit,       // Legacy/Rune City
+  energyCore,    // M2: Unstable glowing core
+  commandSystem, // M3: Security/Keywords
+  signalRoom,    // M4: Data types/Signals
+  displayPanels, // M5: Output/Holograms
+  pilotConsole,  // M6: Input/Scanf
+  calculationCore,// M7: Operators
+  autopilotAI,   // M8: Conditions/Meteor threats
+  thrusterRoom,  // M9: Loops
+  commandRouter, // M10: Switch Case
+  moduleFactory, // M11: Functions
+  dataVault,     // M12: Arrays
+  memoryLab,     // M13: Pointers
+  blueprintLab,  // M14: Structures
 }
 
 class TeachingModule {

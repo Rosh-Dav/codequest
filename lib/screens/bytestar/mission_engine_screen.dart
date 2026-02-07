@@ -4,17 +4,15 @@ import '../../utils/bytestar_theme.dart';
 import '../../utils/theme.dart';
 import '../../models/bytestar_data.dart';
 import '../../widgets/bytestar/nova_hologram.dart';
-import '../../widgets/bytestar/nova_hologram.dart';
-import '../../widgets/bytestar/c_code_editor.dart';
-import '../../widgets/bytestar/space_backgrounds.dart'; // Audio/Visual
 import '../../widgets/bytestar/animated_space_background.dart';
 import '../../widgets/background/code_background.dart';
+import '../../widgets/bytestar/c_code_editor.dart';
 import '../../services/judge0_service.dart';
 import '../../services/mock_c_compiler.dart';
-import '../../services/gemini_service.dart'; // AI Logic
-
+import '../../services/gemini_service.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../utils/dialogue_queue.dart';
+import '../../services/bytestar/reward_service.dart';
 
 class MissionEngineScreen extends StatefulWidget {
   final Mission mission;
@@ -38,8 +36,10 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
   int _teachingStepIndex = 0;
   String _userCode = '';
   bool _isNovaTalking = false;
+  bool _isQueryingGemini = false;
   final FlutterTts _flutterTts = FlutterTts();
   late final DialogueQueue _dialogueQueue;
+  final RewardService _rewardService = RewardService();
 
   @override
   void initState() {
@@ -51,27 +51,30 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
   }
 
   void _initTts() async {
-    await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setPitch(1.1); // Slightly higher pitch for female AI
-    await _flutterTts.setSpeechRate(0.5);
-    await _flutterTts.setVolume(1.0);
-    
-    _flutterTts.setStartHandler(() {
-      if (mounted) setState(() => _isNovaTalking = true);
-    });
-
-    _flutterTts.setCompletionHandler(() {
-      if (mounted) setState(() => _isNovaTalking = false);
-    });
-
     try {
+      await _flutterTts.setLanguage("en-US");
+      await _flutterTts.setPitch(1.1); // Slightly higher pitch for female AI
+      await _flutterTts.setSpeechRate(0.5);
+      await _flutterTts.setVolume(1.0);
+      
+      _flutterTts.setStartHandler(() {
+        if (mounted) setState(() => _isNovaTalking = true);
+      });
+
+      _flutterTts.setCompletionHandler(() {
+        if (mounted) setState(() => _isNovaTalking = false);
+      });
+
+      _flutterTts.setErrorHandler((msg) {
+        debugPrint("TTS Error Handler: $msg");
+        if (mounted) setState(() => _isNovaTalking = false);
+      });
+
       // Get list of available voices
       List<dynamic>? voices = await _flutterTts.getVoices;
       if (voices != null) {
-        // Try to find a female voice (heuristic based on common names/attributes)
+        // ... (voice selection logic)
         Map<dynamic, dynamic>? femaleVoice;
-        
-        // 1. Look for explicit "female" or "Google US English" (often female default)
         for (var v in voices) {
             String name = v['name'].toString().toLowerCase();
             if (name.contains('female') || name.contains('woman') || 
@@ -81,13 +84,13 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
               break;
             }
         }
-        
         if (femaleVoice != null) {
            await _flutterTts.setVoice({"name": femaleVoice["name"], "locale": femaleVoice["locale"]});
         }
       }
     } catch (e) {
-      debugPrint("Error setting specific voice: $e");
+      debugPrint("Error initializing TTS: $e. Entering text-only mode.");
+      // We don't throw, so _dialogueQueue still works for text animations
     }
   }
 
@@ -252,10 +255,13 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
     }
 
     if (passed) {
+      // Add XP Reward
+      await _rewardService.addXp(150);
+      
       setState(() {
         _currentState = MissionState.success;
         _isNovaTalking = true;
-        _speak("Mission Accomplished! Systems coming back online.");
+        _speak("Mission Accomplished! You've earned 150 XP. Systems coming back online.");
       });
     } else {
       // Smart Error Handling via Gemini
@@ -315,10 +321,10 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
       }
   }
 
-  bool _isQueryingGemini = false;
+// _isQueryingGemini is used internally in _handleSmartError
 
   Future<void> _askNova() async {
-    final TextEditingController _promptController = TextEditingController();
+    final TextEditingController promptController = TextEditingController();
     
     final query = await showDialog<String>(
       context: context,
@@ -326,7 +332,7 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
         backgroundColor: ByteStarTheme.cardBg,
         title: Text('Ask NOVA', style: ByteStarTheme.heading),
         content: TextField(
-          controller: _promptController,
+          controller: promptController,
           style: ByteStarTheme.body,
           decoration: InputDecoration(
             hintText: "What's on your mind, Cadet?",
@@ -342,7 +348,7 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
             child: Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, _promptController.text),
+            onPressed: () => Navigator.pop(context, promptController.text),
             child: Text('Transmit', style: ByteStarTheme.code.copyWith(color: ByteStarTheme.accent)),
           ),
         ],
@@ -361,7 +367,7 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
     String fullPrompt = query;
     if (_currentState == MissionState.task) {
       fullPrompt = "User Task: ${widget.mission.task.instruction}\n"
-          "User Code:\n${_userCode}\n\n"
+          "User Code:\n$_userCode\n\n"
           "Question: $query";
     }
 

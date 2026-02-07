@@ -21,6 +21,8 @@ class _AuthPanelState extends State<AuthPanel> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  String? _error;
+
 
   @override
   void dispose() {
@@ -59,27 +61,16 @@ class _AuthPanelState extends State<AuthPanel> {
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    setState(() => _isLoading = true);
-    try {
-      final credential = await _authService.signInWithGoogle();
-      if (credential != null) {
-        widget.onLoginSuccess();
-      }
-    } catch (e) {
-      _showError(e.toString());
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+
+  String _cleanError(String message) {
+    return message.replaceAll(RegExp(r'\[.*?\]\s*'), '').replaceAll('Exception:', '').trim();
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
+    setState(() => _error = _cleanError(message));
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) setState(() => _error = null);
+    });
   }
 
   @override
@@ -131,6 +122,38 @@ class _AuthPanelState extends State<AuthPanel> {
               textAlign: TextAlign.center,
             ).animate().fadeIn(delay: 200.ms),
 
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().shake(duration: 400.ms).fadeIn(),
+              ),
+
             const SizedBox(height: 40),
 
             // Form Fields
@@ -164,30 +187,11 @@ class _AuthPanelState extends State<AuthPanel> {
             // Login Button
             GamingButton(
               text: _isLogin ? 'Start Learning' : 'Create Account',
-              onPressed: _isLoading ? null : _handleEmailAuth,
+              onPressed: _isLoading ? null : () => _handleEmailAuth(),
               isLoading: _isLoading,
             ).animate().fadeIn(delay: 600.ms).scale(),
 
             const SizedBox(height: 20),
-
-            // Google Sign-In
-            SizedBox(
-              height: 46,
-              child: OutlinedButton.icon(
-                onPressed: _isLoading ? null : _handleGoogleSignIn,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.textPrimary,
-                  side: BorderSide(color: AppTheme.glassBorder),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                icon: const Icon(Icons.g_mobiledata, size: 28),
-                label: const Text('Continue with Google'),
-              ),
-            ).animate().fadeIn(delay: 700.ms),
-
-            const SizedBox(height: 10),
 
             // Toggle Button
             TextButton(

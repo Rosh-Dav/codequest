@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../utils/bytestar_theme.dart';
 import '../../utils/theme.dart';
 import '../../models/bytestar_data.dart';
 import '../../widgets/bytestar/nova_hologram.dart';
 import '../../widgets/background/code_background.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../bytestar/mission_engine_screen.dart';
+import '../bytestar/profile_screen.dart';
 
 class RuneCityMissionMapScreen extends StatefulWidget {
   final String username;
@@ -301,7 +301,7 @@ class _RuneCityMissionMapScreenState extends State<RuneCityMissionMapScreen> {
       backgroundColor: AppTheme.ideBackground,
       body: Stack(
         children: [
-          const Positioned.fill(child: CodeBackground()),
+          Positioned.fill(child: CodeBackground()),
           Positioned.fill(
             child: IgnorePointer(
               child: Container(
@@ -364,11 +364,27 @@ class _RuneCityMissionMapScreenState extends State<RuneCityMissionMapScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.auto_awesome, color: AppTheme.syntaxYellow),
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: AppTheme.syntaxYellow),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Apprentice ${widget.username}',
-                          style: AppTheme.bodyStyle.copyWith(fontWeight: FontWeight.bold),
+                        Icon(Icons.auto_awesome, color: AppTheme.syntaxYellow),
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ProfileScreen(username: widget.username),
+                              ),
+                            ).then((_) {
+                              if (mounted) setState(() {});
+                            });
+                          },
+                          child: Text(
+                            'Apprentice ${widget.username}',
+                            style: AppTheme.bodyStyle.copyWith(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
@@ -482,7 +498,7 @@ class _ProgressPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.auto_awesome, color: AppTheme.syntaxYellow, size: 16),
+          Icon(Icons.auto_awesome, color: AppTheme.syntaxYellow, size: 16),
           const SizedBox(width: 6),
           Text(
             'Progress $current/$total',
@@ -501,7 +517,7 @@ class _ProgressPill extends StatelessWidget {
                 value: ratio,
                 minHeight: 6,
                 backgroundColor: AppTheme.ideBackground,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.syntaxYellow),
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.syntaxYellow),
               ),
             ),
           ),

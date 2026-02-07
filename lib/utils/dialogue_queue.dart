@@ -44,10 +44,24 @@ class DialogueQueue {
       }
     });
 
-    await _tts.speak(text);
-    
-    // Wait for completion handler
-    await _currentCompleter!.future;
+    try {
+      await _tts.speak(text);
+      // Wait for completion handler with a timeout as safety
+      await _currentCompleter!.future.timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          if (!_currentCompleter!.isCompleted) {
+            _currentCompleter!.complete();
+          }
+        },
+      );
+    } catch (e) {
+      print("TTS Error in DialogueQueue: $e");
+      // If speak fails, still move to next to keep NOVA "online" (text-only)
+      if (!_currentCompleter!.isCompleted) {
+        _currentCompleter!.complete();
+      }
+    }
     
     _playNext();
   }

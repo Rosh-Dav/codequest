@@ -16,6 +16,23 @@ class RewardService {
     await prefs.setInt(_xpKey, currentXp + amount);
   }
 
+  // Leveling Logic
+  Future<int> getLevel() async {
+    final xp = await getXp();
+    return (xp / 500).floor() + 1;
+  }
+
+  Future<double> getXpProgress() async {
+    final xp = await getXp();
+    final xpInCurrentLevel = xp % 500;
+    return xpInCurrentLevel / 500.0;
+  }
+
+  Future<int> getXpNeededForNextLevel() async {
+    final xp = await getXp();
+    return 500 - (xp % 500);
+  }
+
   Future<List<String>> getBadges() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getStringList(_badgesKey) ?? [];

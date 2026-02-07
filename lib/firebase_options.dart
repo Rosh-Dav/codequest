@@ -19,20 +19,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCx81Xh1kktSsRNt3_wmPmKHCDn1N_MIaY',
-    authDomain: 'codequest-aa086.firebaseapp.com',
-    projectId: 'codequest-aa086',
-    storageBucket: 'codequest-aa086.firebasestorage.app',
-    messagingSenderId: '1087734660069',
-    appId: '1:1087734660069:web:e57ac0ca8b28e9fa888d0c',
-    measurementId: 'G-QR96KJL767',
+    apiKey: 'AIzaSyAqGrexj9DXnaA9bzo8TKFEtaU-fFpsa8k',
+    authDomain: 'codequest-game-v1.firebaseapp.com',
+    projectId: 'codequest-game-v1',
+    storageBucket: 'codequest-game-v1.firebasestorage.app',
+    messagingSenderId: '17271084874',
+    appId: '1:17271084874:web:576cb9a4a99af31a7853b3',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD7c-PsfrFTrFGqeRz7iJt_G18JjOwUc0A',
-    appId: '1:1087734660069:android:8f4be13819152e05888d0c',
-    messagingSenderId: '1087734660069',
-    projectId: 'codequest-aa086',
-    storageBucket: 'codequest-aa086.firebasestorage.app',
+    apiKey: 'AIzaSyCAIn9fTPDUT67-ly8Dwfr5vUE-djbyWlw',
+    appId: '1:17271084874:android:e565eae27303dd487853b3',
+    messagingSenderId: '17271084874',
+    projectId: 'codequest-game-v1',
+    storageBucket: 'codequest-game-v1.firebasestorage.app',
   );
 }

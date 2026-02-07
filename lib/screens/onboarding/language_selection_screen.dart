@@ -29,9 +29,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
     });
 
     // Show confirmation and transition
-    Future.delayed(const Duration(milliseconds: 800), () {
+    Future.delayed(const Duration(milliseconds: 800), () async {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
+        await Navigator.of(context).push(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 StoryModeSelectionScreen(
@@ -47,6 +47,13 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
             transitionDuration: const Duration(milliseconds: 600),
           ),
         );
+        
+        // Reset state so user can select different language if they backtrack
+        if (mounted) {
+          setState(() {
+            _isTransitioning = false;
+          });
+        }
       }
     });
   }
@@ -66,7 +73,17 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
           SafeArea(
             child: Column(
               children: [
-                const SizedBox(height: 60),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 // Title
                 Text(

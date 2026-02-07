@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final username =
         user?.displayName ?? user?.email?.split('@').first ?? 'Coder';
     // Navigate to onboarding
-    Navigator.of(context).pushReplacement(
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LanguageSelectionScreen(username: username),
       ),

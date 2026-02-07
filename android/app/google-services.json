@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1087734660069",
-    "project_id": "codequest-aa086",
-    "storage_bucket": "codequest-aa086.firebasestorage.app"
+    "project_number": "17271084874",
+    "project_id": "codequest-game-v1",
+    "storage_bucket": "codequest-game-v1.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1087734660069:android:8f4be13819152e05888d0c",
+        "mobilesdk_app_id": "1:17271084874:android:e565eae27303dd487853b3",
         "android_client_info": {
-          "package_name": "com.example.codequest"
+          "package_name": "com.codequest.game"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD7c-PsfrFTrFGqeRz7iJt_G18JjOwUc0A"
+          "current_key": "AIzaSyCAIn9fTPDUT67-ly8Dwfr5vUE-djbyWlw"
         }
       ],
       "services": {
