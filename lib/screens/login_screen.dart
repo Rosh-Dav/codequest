@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/background/code_background.dart';
 import '../../widgets/auth/auth_panel.dart';
-import '../../widgets/ai/ai_bot_overlay.dart';
+import 'onboarding/language_selection_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,13 +11,17 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _showAIBot = false;
-
   void _onLoginSuccess() {
-    setState(() {
-      _showAIBot = true;
-    });
+    // Navigate to onboarding
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const LanguageSelectionScreen(
+          username: 'Coder', // TODO: Get actual username from form
+        ),
+      ),
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -25,31 +29,9 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           const CodeBackground(),
-          
-          AnimatedOpacity(
-            opacity: _showAIBot ? 0.0 : 1.0,
-            duration: const Duration(milliseconds: 500),
-            child: PointerInterceptor(
-              intercepting: _showAIBot,
-               child: AuthPanel(onLoginSuccess: _onLoginSuccess),
-            ),
-          ),
-
-          if (_showAIBot)
-            const AIBotOverlay(),
+          AuthPanel(onLoginSuccess: _onLoginSuccess),
         ],
       ),
     );
   }
-}
-
-class PointerInterceptor extends StatelessWidget {
-    final bool intercepting;
-    final Widget child;
-    const PointerInterceptor({super.key, required this.intercepting, required this.child});
-
-    @override
-    Widget build(BuildContext context) {
-        return IgnorePointer(ignoring: intercepting, child: child);
-    }
 }
