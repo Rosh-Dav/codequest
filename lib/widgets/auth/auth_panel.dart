@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/theme.dart';
 import 'neon_input.dart';
 import 'gaming_button.dart';
+import '../../services/auth_service.dart';
 
 class AuthPanel extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -15,6 +16,71 @@ class AuthPanel extends StatefulWidget {
 
 class _AuthPanelState extends State<AuthPanel> {
   bool _isLogin = true;
+  bool _isLoading = false;
+  final _authService = AuthService();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleEmailAuth() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final username = _usernameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty || (!_isLogin && username.isEmpty)) {
+      _showError('Please fill in all required fields.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      if (_isLogin) {
+        await _authService.signInWithEmail(email: email, password: password);
+      } else {
+        await _authService.signUpWithEmail(
+          email: email,
+          password: password,
+          username: username,
+        );
+      }
+      widget.onLoginSuccess();
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final credential = await _authService.signInWithGoogle();
+      if (credential != null) {
+        widget.onLoginSuccess();
+      }
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,12 +140,14 @@ class _AuthPanelState extends State<AuthPanel> {
                 child: NeonInput(
                   hintText: 'Username',
                   prefixIcon: Icons.person_outline,
+                  controller: _usernameController,
                 ).animate().fadeIn().slideX(begin: -0.1, end: 0),
               ),
 
             NeonInput(
               hintText: 'Email',
               prefixIcon: Icons.email_outlined,
+              controller: _emailController,
             ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.1, end: 0),
 
             const SizedBox(height: 20),
@@ -88,6 +156,7 @@ class _AuthPanelState extends State<AuthPanel> {
               hintText: 'Password',
               prefixIcon: Icons.lock_outline,
               obscureText: true,
+              controller: _passwordController,
             ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1, end: 0),
 
             const SizedBox(height: 32),
@@ -95,10 +164,30 @@ class _AuthPanelState extends State<AuthPanel> {
             // Login Button
             GamingButton(
               text: _isLogin ? 'Start Learning' : 'Create Account',
-              onPressed: widget.onLoginSuccess,
+              onPressed: _isLoading ? null : _handleEmailAuth,
+              isLoading: _isLoading,
             ).animate().fadeIn(delay: 600.ms).scale(),
 
             const SizedBox(height: 20),
+
+            // Google Sign-In
+            SizedBox(
+              height: 46,
+              child: OutlinedButton.icon(
+                onPressed: _isLoading ? null : _handleGoogleSignIn,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.textPrimary,
+                  side: BorderSide(color: AppTheme.glassBorder),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: const Icon(Icons.g_mobiledata, size: 28),
+                label: const Text('Continue with Google'),
+              ),
+            ).animate().fadeIn(delay: 700.ms),
+
+            const SizedBox(height: 10),
 
             // Toggle Button
             TextButton(

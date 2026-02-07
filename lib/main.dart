@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'firebase_options.dart';
 import 'services/gemini_service.dart';
+import 'services/local_storage_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/phase1/system_awakening_screen.dart';
 import 'screens/phase1/mission1_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/theme.dart';
-import 'services/local_storage_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize local storage (Required for StoryTriggerManager)
   await LocalStorageService().init();
 
@@ -27,7 +29,11 @@ Future<void> main() async {
     debugPrint("Warning: Failed to load .env file: $e");
     // Continue running app even if env fails
   }
-  
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const CodeQuestApp());
 }
 

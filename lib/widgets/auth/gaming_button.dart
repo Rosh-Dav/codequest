@@ -3,12 +3,14 @@ import '../../utils/theme.dart';
 
 class GamingButton extends StatefulWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
   const GamingButton({
     super.key,
     required this.text,
     required this.onPressed,
+    this.isLoading = false,
   });
 
   @override
@@ -34,21 +36,25 @@ class _GamingButtonState extends State<GamingButton> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final isEnabled = widget.onPressed != null && !widget.isLoading;
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
-      cursor: SystemMouseCursors.click,
+      cursor: isEnabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
       child: GestureDetector(
-        onTap: widget.onPressed,
+        behavior: HitTestBehavior.opaque,
+        onTap: isEnabled ? widget.onPressed : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: double.infinity,
           height: 50,
           decoration: BoxDecoration(
-            color: AppTheme.accentColor,
+            color: isEnabled
+                ? AppTheme.accentColor
+                : AppTheme.accentColor.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(6),
             boxShadow: [
-              if (_isHovering)
+              if (_isHovering && isEnabled)
                 BoxShadow(
                   color: AppTheme.accentColor.withValues(alpha: 0.4),
                   blurRadius: 12,
@@ -59,12 +65,23 @@ class _GamingButtonState extends State<GamingButton> with SingleTickerProviderSt
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-               const Icon(Icons.play_arrow_rounded, color: Colors.white),
-               const SizedBox(width: 8),
-               Text(
-                widget.text,
-                style: AppTheme.buttonStyle,
-              ),
+              if (widget.isLoading) ...[
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ] else ...[
+                const Icon(Icons.play_arrow_rounded, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  widget.text,
+                  style: AppTheme.buttonStyle,
+                ),
+              ],
             ],
           ),
         ),
