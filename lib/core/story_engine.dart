@@ -88,6 +88,7 @@ class StoryEngine {
       bool hasStr = RegExp(r'=\s*["\u0027].*["\u0027]').hasMatch(code);
       bool hasBool = RegExp(r'=\s*(True|False)').hasMatch(code);
       
+
       return hasInt && hasFloat && hasStr && hasBool;
     }
     
@@ -108,8 +109,8 @@ class StoryEngine {
     // Logic to advance to next mission
     int nextMission = state.currentMission + 1;
     
-    // For this implementation limited to Mission 3
-    if (nextMission > 3) {
+    // For this implementation limited to Mission 11
+    if (nextMission > 11) {
       // End of implemented content
     }
 

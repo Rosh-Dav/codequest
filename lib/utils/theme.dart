@@ -9,6 +9,7 @@ class AppTheme {
   static const Color syntaxGreen = Color(0xFF7EE787); // Strings/Success
   static const Color syntaxYellow = Color(0xFFE3B341); // Warnings/Keywords
   static const Color syntaxPurple = Color(0xFFD2A8FF); // Control flow/Methods
+  static const Color syntaxRed = Color(0xFFFF7B72); // Errors/Deletions
   static const Color syntaxComment = Color(0xFF8B949E); // Comments
   static const Color textPrimary = Color(0xFFC9D1D9); // Main text
   static const Color accentColor = Color(0xFF58A6FF); // Focus/Buttons

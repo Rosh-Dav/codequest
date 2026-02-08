@@ -11,14 +11,7 @@ class LevelManager extends ChangeNotifier {
     LevelModel(id: 1, title: "First Signal", route: '/story/python/mission1', isUnlocked: true),
     LevelModel(id: 2, title: "Energy Labeling", route: '/story/python/mission2'),
     LevelModel(id: 3, title: "Signal Formats", route: '/story/python/mission3'),
-    LevelModel(id: 4, title: "Command Receiver", route: '/story/python/mission4'),
-    LevelModel(id: 5, title: "Data Converter", route: '/story/python/mission5'),
-    LevelModel(id: 6, title: "Math Core", route: '/story/python/mission6'),
-    LevelModel(id: 7, title: "Engineer Notes", route: '/story/python/mission7'),
-    LevelModel(id: 8, title: "Alignment System", route: '/story/python/mission8'), 
-    LevelModel(id: 9, title: "Decision Unit", route: '/story/python/mission9'),
-    LevelModel(id: 10, title: "Auto-Repeater", route: '/story/python/mission10'),
-    LevelModel(id: 11, title: "Continuous Monitor", route: '/story/python/mission11'),
+
   ];
 
   List<LevelModel> get levels => _levels;

@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import '../../utils/bytestar_theme.dart';
 
 class CCodeEditor extends StatefulWidget {
-  final String initialCode;
-  final Function(String) onCodeChanged;
-  final bool isReadOnly;
-
   const CCodeEditor({
     super.key,
-    required this.initialCode,
     required this.onCodeChanged,
+    this.initialCode = '',
+    this.filename = 'main.c',
     this.isReadOnly = false,
   });
+
+  final String initialCode;
+  final String filename;
+  final Function(String) onCodeChanged;
+  final bool isReadOnly;
 
   @override
   State<CCodeEditor> createState() => _CCodeEditorState();
@@ -26,10 +28,10 @@ class SyntaxTextController extends TextEditingController {
     final TextStyle effectiveStyle = style ?? const TextStyle(); // Handle null style
     final List<TextSpan> children = [];
     final pattern = RegExp(
-      r'(//.*)|' // Comments
+      r'(//.*|#.*)|' // Comments (C and Python)
       r'(".*?")|' // Strings
-      r'\b(int|float|double|char|void|return|if|else|for|while|do|switch|case|break|continue)\b|' // Keywords
-      r'\b(true|false|NULL)\b|' // Literals
+      r'\b(int|float|double|char|void|return|if|else|elif|for|while|do|switch|case|break|continue|def|class|import|print)\b|' // Keywords
+      r'\b(true|false|NULL|True|False|None)\b|' // Literals
       r'([0-9]+)|' // Numbers
       r'([{}();,])' // Punctuation
     );
@@ -44,7 +46,7 @@ class SyntaxTextController extends TextEditingController {
         final String token = match.group(0)!;
         TextStyle? tokenStyle;
 
-        if (token.startsWith('//')) {
+        if (token.startsWith('//') || token.startsWith('#')) {
            tokenStyle = effectiveStyle.copyWith(color: Colors.grey);
         } else if (token.startsWith('"')) {
            tokenStyle = effectiveStyle.copyWith(color: const Color(0xFFCE9178));
@@ -124,7 +126,7 @@ class _CCodeEditorState extends State<CCodeEditor> {
                 const Icon(Icons.code, color: ByteStarTheme.accent, size: 16),
                 const SizedBox(width: 8),
                 Text(
-                  'main.c',
+                  widget.filename,
                   style: ByteStarTheme.code.copyWith(color: Colors.white70),
                 ),
                 const Spacer(),

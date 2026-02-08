@@ -58,6 +58,13 @@ class RewardService {
      final prefs = await SharedPreferences.getInstance();
      await prefs.setDouble(_integrityKey, value);
   }
+
+  Future<void> resetRewards() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_xpKey);
+    await prefs.remove(_badgesKey);
+    await prefs.remove(_integrityKey);
+  }
 }
 
 class BadgeData {

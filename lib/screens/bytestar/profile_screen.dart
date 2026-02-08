@@ -1,140 +1,470 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/bytestar_theme.dart';
-import '../../services/bytestar/reward_service.dart';
-import '../../models/bytestar_data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../utils/theme.dart';
+import '../../services/profile_stats_aggregator.dart';
+import '../../services/local_storage_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String username;
+  final String? username;
+  final bool isFantasyTheme;
 
-  const ProfileScreen({super.key, required this.username});
+  const ProfileScreen({
+    super.key,
+    this.username,
+    this.isFantasyTheme = false,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final RewardService _rewardService = RewardService();
-  int _xp = 0;
-  int _level = 1;
-  double _xpProgress = 0.0;
-  int _xpNeeded = 500;
-  int _missionsCompleted = 0;
+  final ProfileStatsAggregator _aggregator = ProfileStatsAggregator();
+  ProfileStats? _stats;
+  bool _isLoading = true;
+  String? _username;
 
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    _loadAllStats();
   }
 
-  Future<void> _loadStats() async {
-    final xp = await _rewardService.getXp();
-    final level = await _rewardService.getLevel();
-    final progress = await _rewardService.getXpProgress();
-    final needed = await _rewardService.getXpNeededForNextLevel();
+  Future<void> _loadAllStats() async {
+    final stats = await _aggregator.aggregate();
     
-    final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getStringList('completedMissions') ?? [];
+    String? localUsername;
+    if (widget.username == null) {
+      localUsername = await LocalStorageService().getUsername();
+    }
 
-    setState(() {
-      _xp = xp;
-      _level = level;
-      _xpProgress = progress;
-      _xpNeeded = needed;
-      _missionsCompleted = completed.length;
-    });
+    if (mounted) {
+      setState(() {
+        _stats = stats;
+        _username = localUsername;
+        _isLoading = false;
+      });
+    }
   }
+
+  Color get _accentColor => widget.isFantasyTheme ? AppTheme.syntaxYellow : ByteStarTheme.accent;
+  Color get _primaryBg => widget.isFantasyTheme ? AppTheme.ideBackground : ByteStarTheme.primary;
+  Color get _secondaryBg => widget.isFantasyTheme ? AppTheme.idePanel : ByteStarTheme.secondary;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ByteStarTheme.primary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('PILOT PROFILE', style: ByteStarTheme.heading.copyWith(fontSize: 18)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ByteStarTheme.accent),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      backgroundColor: _primaryBg,
       body: Stack(
         children: [
-          // Dynamic Background
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    ByteStarTheme.primary,
-                    ByteStarTheme.primary.withValues(alpha: 0.8),
-                    ByteStarTheme.secondary.withValues(alpha: 0.9),
-                  ],
+          // Background effects
+          if (widget.isFantasyTheme)
+            _buildMysticBackground()
+          else
+            _buildSciFiBackground(),
+
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                pinned: true,
+                expandedHeight: 260,
+                leading: IconButton(
+                  icon: Icon(Icons.arrow_back, color: _accentColor),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: _buildPilotHeader(),
+                ),
+              ),
+              if (_isLoading)
+                const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        _buildMainStats(),
+                        const SizedBox(height: 24),
+                        _buildLevelCard(),
+                        const SizedBox(height: 24),
+                        _buildStoryProgress(),
+                        const SizedBox(height: 24),
+                        _buildLanguageStats(),
+                        const SizedBox(height: 24),
+                        _buildActivityGrid(),
+                        const SizedBox(height: 40),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          widget.isFantasyTheme ? 'LEAVE GUILD' : 'LOGOUT', 
+                          Icons.logout, 
+                          () {
+                            Navigator.of(context).popUntil((route) => route.isFirst);
+                          },
+                          isDestructive: true
+                        ),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          
+          // CRT Overlay for Sci-Fi
+          if (!widget.isFantasyTheme)
+            IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.0),
+                      Colors.black.withValues(alpha: 0.1),
+                    ],
+                    stops: const [0, 0.5, 1],
+                  ),
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSciFiBackground() {
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          // Grid lines
+          CustomPaint(
+            size: Size.infinite,
+            painter: _GridPainter(ByteStarTheme.accent.withValues(alpha: 0.05)),
           ),
-          
-          // Animated Grid & Tactical Data Streams
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.15,
-              child: CustomPaint(
-                painter: _TacticalGridPainter(),
+          // Pulsing glow
+          Center(
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    ByteStarTheme.accent.withValues(alpha: 0.1),
+                    Colors.transparent,
+                  ],
+                ),
               ),
-            ),
+            ).animate(onPlay: (c) => c.repeat(reverse: true))
+             .scale(duration: 3.seconds, begin: const Offset(0.8, 0.8), end: const Offset(1.2, 1.2)),
           ),
+        ],
+      ),
+    );
+  }
 
-          // Periodically Moving Scanline
-          Positioned.fill(
-            child: _ScanningLine(),
-          ),
-
-          // Static CRT Scanlines Overlay
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: _ScanlineOverlay(),
-            ),
-          ),
-
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Column(
-                children: [
-                  // Pilot Header with Holographic Ring & Tech Brackets
-                  _buildPilotHeader(),
-                  const SizedBox(height: 32),
-                  
-                  // Level & XP Card with Tactical Frame
-                  _buildLevelCard(),
-                  const SizedBox(height: 24),
-                  
-                  // Stats Grid with Cascaded Tech Animations
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.4,
-                    children: [
-                      _buildStatCard('MISSIONS', '$_missionsCompleted/14', Icons.rocket_launch, 0),
-                      _buildStatCard('RANK', _getRankName(_level), Icons.military_tech, 1),
-                      _buildStatCard('INTEGRITY', '100%', Icons.shield, 2),
-                      _buildStatCard('BADGES', '0', Icons.workspace_premium, 3),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  // Achievements in a Tactical Panel
-                  _buildBadgesPreview(),
-                  const SizedBox(height: 40),
+  Widget _buildMysticBackground() {
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          // Fantasy Ambient Glow
+          Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0, -0.5),
+                radius: 1.2,
+                colors: [
+                  AppTheme.syntaxYellow.withValues(alpha: 0.1),
+                  Colors.transparent,
                 ],
               ),
+            ),
+          ),
+          // Floating particles
+          ...List.generate(15, (i) {
+            return _FloatingParticle(
+              color: AppTheme.syntaxYellow.withValues(alpha: 0.2),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainStats() {
+    return Row(
+      children: [
+        Expanded(child: _buildStatCard('MISSIONS', '${_stats?.missionsCompleted ?? 0}', Icons.task_alt)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildStatCard('XP TOTAL', '${_stats?.totalXp ?? 0}', Icons.bolt)),
+      ],
+    );
+  }
+
+  Widget _buildLevelCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: _secondaryBg.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _accentColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(color: _accentColor.withValues(alpha: 0.05), blurRadius: 20, spreadRadius: 2),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.isFantasyTheme ? 'ASCENSION' : 'RANK PROGRESS', 
+                style: ByteStarTheme.code.copyWith(color: _accentColor, fontSize: 12, fontWeight: FontWeight.bold)
+              ),
+              Text('LVL ${_stats?.level ?? 1}', style: ByteStarTheme.code.copyWith(color: _accentColor, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _stats?.levelProgress ?? 0.0,
+              minHeight: 8,
+              backgroundColor: Colors.black26,
+              valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${((_stats?.levelProgress ?? 0.0) * 500).toInt()} / 500 XP TO NEXT LEVEL',
+            style: ByteStarTheme.code.copyWith(color: Colors.white54, fontSize: 10, letterSpacing: 1),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  Widget _buildStatCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: _secondaryBg.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _accentColor.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: _accentColor, size: 28).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 3.seconds),
+          const SizedBox(height: 12),
+          Text(value, style: ByteStarTheme.heading.copyWith(fontSize: 24, color: Colors.white)),
+          const SizedBox(height: 4),
+          Text(
+            label, 
+            style: ByteStarTheme.code.copyWith(fontSize: 10, color: _accentColor.withValues(alpha: 0.6), fontWeight: FontWeight.bold)
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: 200.ms).scale(begin: const Offset(0.9, 0.9));
+  }
+
+  Widget _buildActivityGrid() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.isFantasyTheme ? 'DIVINE RELICS' : 'ACHIEVEMENTS', 
+          style: ByteStarTheme.code.copyWith(color: _accentColor, fontSize: 12, fontWeight: FontWeight.bold)
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 4,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          children: List.generate(4, (i) => _buildBadgePlaceholder(i)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBadgePlaceholder(int index) {
+    if (_stats == null) return const SizedBox.shrink();
+    
+    // Use real badges if available, else placeholders
+    if (index < _stats!.badges.length) {
+      return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: _accentColor.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(12),
+          color: _accentColor.withValues(alpha: 0.05),
+        ),
+        child: const Icon(Icons.workspace_premium, color: AppTheme.syntaxYellow),
+      ).animate().fadeIn(delay: (400 + index * 100).ms);
+    }
+
+    final icons = [Icons.stars, Icons.workspace_premium, Icons.military_tech, Icons.verified];
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: _accentColor.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.black12,
+      ),
+      child: Icon(icons[index % icons.length], color: _accentColor.withValues(alpha: 0.2)),
+    ).animate().fadeIn(delay: (400 + index * 100).ms);
+  }
+
+  Widget _buildStoryProgress() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'STORY ARCHIVE',
+          style: ByteStarTheme.code.copyWith(color: _accentColor, fontSize: 12, fontWeight: FontWeight.bold)
+        ),
+        const SizedBox(height: 16),
+        ...(_stats?.missionsPerStory.entries.map((entry) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _secondaryBg.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _accentColor.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  entry.key == 'ByteStar Arena' ? Icons.rocket_launch : Icons.fort,
+                  color: _accentColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  entry.key,
+                  style: ByteStarTheme.body.copyWith(fontSize: 14, color: Colors.white),
+                ),
+                const Spacer(),
+                Text(
+                  '${entry.value} MISSIONS',
+                  style: ByteStarTheme.code.copyWith(fontSize: 10, color: _accentColor),
+                ),
+              ],
+            ),
+          );
+        }).toList() ?? []),
+      ],
+    ).animate().fadeIn(delay: 500.ms);
+  }
+
+  Widget _buildLanguageStats() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'TECHNICAL MASTERY',
+          style: ByteStarTheme.code.copyWith(color: _accentColor, fontSize: 12, fontWeight: FontWeight.bold)
+        ),
+        const SizedBox(height: 16),
+        ...(_stats?.languageExperience.entries.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      entry.key,
+                      style: ByteStarTheme.body.copyWith(fontSize: 13, color: Colors.white70),
+                    ),
+                    Text(
+                      '${(entry.value * 100).toInt()}%',
+                      style: ByteStarTheme.code.copyWith(fontSize: 11, color: _accentColor),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: entry.value,
+                    minHeight: 4,
+                    backgroundColor: Colors.black26,
+                    valueColor: AlwaysStoppedAnimation<Color>(_accentColor.withValues(alpha: 0.7)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList() ?? []),
+      ],
+    ).animate().fadeIn(delay: 600.ms);
+  }
+
+  Widget _buildPilotHeader() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 32),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer Rotating Ring
+              Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: _accentColor.withValues(alpha: 0.15),
+                    width: 2,
+                  ),
+                ),
+              ).animate(onPlay: (c) => c.repeat()).rotate(duration: 10.seconds),
+
+              // Inner Avatar
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _accentColor, width: 2),
+                  boxShadow: [
+                    BoxShadow(color: _accentColor.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 2),
+                  ],
+                ),
+                child: ClipOval(
+                  child: Container(
+                    color: Colors.black45,
+                    child: const Icon(Icons.person, size: 70, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            (_username ?? widget.username ?? 'PILOT').toUpperCase(),
+            style: ByteStarTheme.heading.copyWith(fontSize: 22, letterSpacing: 2, color: Colors.white),
+          ).animate().shimmer(delay: 1.seconds, duration: 2.seconds),
+          const SizedBox(height: 4),
+          Text(
+            _getRankName(_stats?.level ?? 1),
+            style: ByteStarTheme.code.copyWith(
+              fontSize: 12, 
+              color: _accentColor, 
+              letterSpacing: 4,
+              fontWeight: FontWeight.bold
             ),
           ),
         ],
@@ -142,451 +472,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPilotHeader() {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            // Outer Rotating Holographic Ring
-            Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: ByteStarTheme.accent.withValues(alpha: 0.15),
-                  width: 1,
-                  style: BorderStyle.solid,
-                ),
-              ),
-            ).animate(onPlay: (controller) => controller.repeat())
-              .rotate(duration: 8.seconds, curve: Curves.linear),
-
-            // Inner Pulsing tech ring
-            Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: ByteStarTheme.accent.withValues(alpha: 0.3),
-                  width: 2,
-                ),
-              ),
-            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .scale(duration: 2.seconds, begin: const Offset(1, 1), end: const Offset(1.05, 1.05)),
-              
-            // Avatar with Glow & Glitch Animation
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: ByteStarTheme.accent.withValues(alpha: 0.6),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: ByteStarTheme.accent.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: Container(
-                  color: ByteStarTheme.secondary.withValues(alpha: 0.6),
-                  child: const Icon(Icons.person, size: 70, color: Colors.white),
-                ),
-              ),
-            ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-              .tint(color: ByteStarTheme.accent.withValues(alpha: 0.1), duration: 200.ms)
-              .shake(hz: 2, duration: 100.ms, delay: 3.seconds),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Text(
-          widget.username.toUpperCase(),
-          style: ByteStarTheme.heading.copyWith(
-            fontSize: 28, 
-            letterSpacing: 8,
-            shadows: [
-              Shadow(color: ByteStarTheme.accent, blurRadius: 15),
-              const Shadow(color: Colors.white, blurRadius: 2),
-            ],
-          ),
-        ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.3, end: 0),
-        
-        // Animated Status Tag
-        Container(
-          margin: const EdgeInsets.only(top: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: ByteStarTheme.accent.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: ByteStarTheme.accent.withValues(alpha: 0.4)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: ByteStarTheme.success,
-                  shape: BoxShape.circle,
-                ),
-              ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                .boxShadow(end: const BoxShadow(color: ByteStarTheme.success, blurRadius: 8)),
-              const SizedBox(width: 8),
-              Text(
-                'SYSTEMS ACTIVE',
-                style: ByteStarTheme.code.copyWith(fontSize: 10, color: ByteStarTheme.accent, letterSpacing: 2),
-              ),
-            ],
-          ),
-        ).animate().fadeIn(delay: 500.ms),
-      ],
-    );
-  }
-
-  Widget _buildLevelCard() {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.03),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: ByteStarTheme.accent.withValues(alpha: 0.15)),
-          ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('EXPERIENCE LEVEL', style: ByteStarTheme.code.copyWith(color: ByteStarTheme.accent, fontSize: 10, letterSpacing: 2)),
-                      const SizedBox(height: 4),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text('$_level', style: ByteStarTheme.heading.copyWith(fontSize: 48, color: ByteStarTheme.accent)),
-                          const SizedBox(width: 8),
-                          Text('RANK: ${_getRankName(_level)}', style: ByteStarTheme.body.copyWith(fontSize: 12, color: Colors.white54, letterSpacing: 1)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: ByteStarTheme.accent.withValues(alpha: 0.05),
-                    ),
-                    child: const Icon(Icons.flash_on, color: ByteStarTheme.accent, size: 32),
-                  ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-                    .shimmer(duration: 1.5.seconds, color: Colors.white30),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Stack(
-                children: [
-                  Container(
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Colors.black45,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: _xpProgress,
-                        backgroundColor: Colors.transparent,
-                        valueColor: const AlwaysStoppedAnimation<Color>(ByteStarTheme.accent),
-                      ),
-                    ),
-                  ),
-                  // Tech ticks
-                  Positioned.fill(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: List.generate(10, (i) => Container(width: 1, color: Colors.white12)),
-                    ),
-                  ),
-                ],
-              ).animate().shimmer(delay: 1.seconds, duration: 2.seconds),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('EXP: $_xp', style: ByteStarTheme.code.copyWith(fontSize: 10, color: Colors.white24)),
-                  Text('NEXT: $_xpNeeded XP', style: ByteStarTheme.code.copyWith(fontSize: 10, color: ByteStarTheme.accent, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
-        ),
-        // HUD Brackets
-        const Positioned(top: 0, left: 0, child: _TechCorner(isTop: true, isLeft: true)),
-        const Positioned(top: 0, right: 0, child: _TechCorner(isTop: true, isLeft: false)),
-        const Positioned(bottom: 0, left: 0, child: _TechCorner(isTop: false, isLeft: true)),
-        const Positioned(bottom: 0, right: 0, child: _TechCorner(isTop: false, isLeft: false)),
-      ],
-    ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.1, end: 0);
-  }
-
-  Widget _buildStatCard(String label, String value, IconData icon, int index) {
-    return Stack(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(2),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: ByteStarTheme.accent, size: 16),
-              const SizedBox(height: 12),
-              Text(label, style: ByteStarTheme.code.copyWith(fontSize: 8, color: Colors.white38, letterSpacing: 1.5)),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(value, style: ByteStarTheme.heading.copyWith(fontSize: 18, color: Colors.white, letterSpacing: 1)),
-              ),
-            ],
-          ),
-        ),
-        // Mini tech accent in corner
-        Positioned(
-          top: 0,
-          right: 0,
-          child: Container(
-            width: 10,
-            height: 1,
-            color: ByteStarTheme.accent.withValues(alpha: 0.5),
-          ),
-        ),
-      ],
-    ).animate().fadeIn(delay: (600 + (index * 100)).ms).slideY(begin: 0.2, end: 0);
-  }
-
-  Widget _buildBadgesPreview() {
-    return Stack(
-      children: [
-        Container(
-           padding: const EdgeInsets.all(24),
-           decoration: BoxDecoration(
-             color: Colors.black.withValues(alpha: 0.1),
-             borderRadius: BorderRadius.circular(4),
-             border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-           ),
-           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('TAC-ACHIEVEMENTS', style: ByteStarTheme.heading.copyWith(fontSize: 14, letterSpacing: 3)),
-                  Icon(Icons.more_horiz, color: ByteStarTheme.accent.withValues(alpha: 0.5), size: 16),
-                ],
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 70,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: 5,
-                  itemBuilder: (context, index) => Container(
-                    width: 70,
-                    margin: const EdgeInsets.only(right: 16),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withValues(alpha: 0.02),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        index == 0 ? Icons.verified_user : Icons.lock_outline, 
-                        color: index == 0 ? ByteStarTheme.accent : Colors.white10, 
-                        size: 24
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Positioned(top: 0, left: 0, child: _TechCorner(isTop: true, isLeft: true)),
-        const Positioned(bottom: 0, right: 0, child: _TechCorner(isTop: false, isLeft: false)),
-      ],
-    ).animate().fadeIn(delay: 1.seconds);
-  }
-
   String _getRankName(int level) {
-    if (level < 3) return 'RECRUIT';
-    if (level < 6) return 'CADET';
+    if (widget.isFantasyTheme) {
+      if (level < 5) return 'NOVICE';
+      if (level < 10) return 'APPRENTICE';
+      if (level < 15) return 'MAGE';
+      return 'ARCHMAGE';
+    }
+    if (level < 5) return 'CADET';
     if (level < 10) return 'PILOT';
     if (level < 15) return 'COMMANDER';
-    return 'STAR-LORD';
-  }
-}
-
-class _TacticalGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = ByteStarTheme.accent.withValues(alpha: 0.1)
-      ..strokeWidth = 0.5;
-
-    // Grid Lines
-    for (double i = 0; i < size.width; i += 50) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += 50) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
-    }
-
-    // Secondary fine grid
-    paint.color = ByteStarTheme.accent.withValues(alpha: 0.03);
-    for (double i = 0; i < size.width; i += 10) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
+    return 'ELITE';
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _ScanningLine extends StatefulWidget {
-  @override
-  State<_ScanningLine> createState() => _ScanningLineState();
-}
-
-class _ScanningLineState extends State<_ScanningLine> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: 4.seconds)..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Stack(
+  Widget _buildActionButton(String label, IconData icon, VoidCallback onTap, {bool isDestructive = false}) {
+    final color = isDestructive ? Colors.redAccent : _accentColor;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Row(
           children: [
-            Positioned(
-              left: 0,
-              right: 0,
-              top: _controller.value * MediaQuery.of(context).size.height,
-              child: Container(
-                height: 2,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      ByteStarTheme.accent.withValues(alpha: 0.3),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 16),
+            Text(
+              label, 
+              style: ByteStarTheme.code.copyWith(
+                color: isDestructive ? Colors.redAccent : Colors.white70,
+                fontSize: 13,
+                fontWeight: FontWeight.bold
+              )
             ),
+            const Spacer(),
+            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5), size: 18),
           ],
-        );
-      },
-    );
-  }
-}
-
-class _ScanlineOverlay extends StatelessWidget {
-  const _ScanlineOverlay();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (context, index) => Container(
-        height: 1,
-        color: Colors.black.withValues(alpha: 0.05),
-        margin: const EdgeInsets.only(bottom: 2),
+        ),
       ),
     );
   }
 }
 
-class _TechCorner extends StatelessWidget {
-  final bool isTop;
-  final bool isLeft;
-
-  const _TechCorner({required this.isTop, required this.isLeft});
+class _FloatingParticle extends StatelessWidget {
+  final Color color;
+  const _FloatingParticle({required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 15,
-      height: 15,
-      padding: const EdgeInsets.all(2),
-      child: CustomPaint(
-        painter: _BracketPainter(isTop: isTop, isLeft: isLeft),
-      ),
+    return Positioned(
+      left: 100, // Randomized in actual stateful if needed, but keeping it simple for now
+      top: 100,
+      child: Container(
+        width: 4,
+        height: 4,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+        ),
+      ).animate(onPlay: (c) => c.repeat())
+       .moveY(begin: 0, end: -100, duration: 4.seconds, curve: Curves.easeInOut)
+       .fadeOut(),
     );
   }
 }
 
-class _BracketPainter extends CustomPainter {
-  final bool isTop;
-  final bool isLeft;
-
-  _BracketPainter({required this.isTop, required this.isLeft});
+class _GridPainter extends CustomPainter {
+  final Color color;
+  _GridPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = ByteStarTheme.accent.withValues(alpha: 0.5)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    if (isTop && isLeft) {
-      path.moveTo(0, size.height);
-      path.lineTo(0, 0);
-      path.lineTo(size.width, 0);
-    } else if (isTop && !isLeft) {
-      path.moveTo(0, 0);
-      path.lineTo(size.width, 0);
-      path.lineTo(size.width, size.height);
-    } else if (!isTop && isLeft) {
-      path.moveTo(0, 0);
-      path.lineTo(0, size.height);
-      path.lineTo(size.width, size.height);
-    } else {
-      path.moveTo(size.width, 0);
-      path.lineTo(size.width, size.height);
-      path.lineTo(0, size.height);
+    final paint = Paint()..color = color..strokeWidth = 1;
+    for (double i = 0; i < size.width; i += 40) {
+      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
     }
-
-    canvas.drawPath(path, paint);
+    for (double j = 0; j < size.height; j += 40) {
+      canvas.drawLine(Offset(0, j), Offset(size.width, j), paint);
+    }
   }
 
   @override

@@ -54,6 +54,7 @@ enum SceneType {
   dataVault,     // M12: Arrays
   memoryLab,     // M13: Pointers
   blueprintLab,  // M14: Structures
+  hyperspace,    // Mission completion transition
 }
 
 class TeachingModule {

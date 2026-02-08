@@ -28,6 +28,21 @@ class GeminiService {
     ]);
   }
 
+  // Initialize specific Python Tutor chat
+  void startPythonTutorChat() {
+    if (_model == null) return;
+    _chatSession = _model!.startChat(history: [
+      Content.text('''
+You are NOVA, an advanced AI learning assistant for the ByteStar Arena game's Python Module.
+Your goal is to help players learn Python programming in a sci-fi context.
+You are a female AI character with a helpful, slightly strict, but encouraging personality.
+Keep your answers brief, punchy, and sound like a sci-fi interface.
+Always stay in character.
+When explaining code, use analogies related to spaceship systems (energy, navigation, comms, etc.).
+'''),
+    ]);
+  }
+
   // Generate explanation for specific code concept
   Future<String> explainConcept(String concept) async {
     if (_model == null) return "I'm offline right now. Check your API connection.";
@@ -55,6 +70,33 @@ class GeminiService {
       return response?.text ?? "I can't analyze the code right now.";
     } catch (e) {
       return "Analysis failed: $e";
+    }
+  }
+
+  // Analyze Python Error
+  Future<String> analyzePythonError(String code, String error) async {
+    if (_model == null) return "I'm offline. Connection to AI Core failed.";
+
+    try {
+      final response = await _chatSession?.sendMessage(
+        Content.text('''
+The cadet's code caused an error.
+Code:
+```python
+$code
+```
+Error Message:
+$error
+
+Please explain this error to a beginner as NOVA.
+1. Start by acknowledging the specific error: "Error detected: $error".
+2. Then, explain *why* it happened using a spaceship analogy (e.g., energy core, navigation maps, comms).
+3. Keep it to 2-3 short, punchy sentences.
+''')
+      );
+      return response?.text ?? "System Malfunction. Unable to analyze error.";
+    } catch (e) {
+      return "Data corruption detected: $e";
     }
   }
   

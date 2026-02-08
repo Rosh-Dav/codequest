@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/phase1_theme.dart';
-import '../../models/level_model.dart';
+import '../../models/level_model.dart'; // This needs to be imported or handled if LevelModel is moved
 
 class LevelCard extends StatelessWidget {
-  final LevelModel level;
+  final LevelModel level; // Assuming LevelModel is available or I make it generic
   final VoidCallback onTap;
 
   const LevelCard({super.key, required this.level, required this.onTap});

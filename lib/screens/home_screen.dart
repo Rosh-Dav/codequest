@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../utils/theme.dart';
 import '../widgets/background/code_background.dart';
 import '../services/local_storage_service.dart';
+import '../widgets/navigation/global_sidebar.dart';
 
 /// Home Screen - Placeholder for non-ByteStar Arena combinations
 /// Shows welcome message and selected preferences
@@ -15,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final LocalStorageService _storage = LocalStorageService();
+  String _username = 'Coder';
   String _welcomeMessage = '';
   bool _isLoading = true;
 
@@ -31,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final storyMode = await _storage.getSelectedStoryMode() ?? 'Unknown';
     
     setState(() {
+      _username = username;
       _welcomeMessage = 'Welcome back, $username!\nYou are learning $language in $storyMode mode.';
       _isLoading = false;
     });
@@ -40,6 +43,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.ideBackground,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          'DASHBOARD',
+          style: AppTheme.headingStyle.copyWith(fontSize: 18, letterSpacing: 2),
+        ),
+        centerTitle: true,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: AppTheme.syntaxBlue),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: GlobalSidebar(username: _username),
       body: Stack(
         children: [
           // Background

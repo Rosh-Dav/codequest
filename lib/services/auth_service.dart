@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final GoogleSignIn? _googleSignIn = kIsWeb ? null : GoogleSignIn();
 
   Future<UserCredential> signUpWithEmail({
     required String email,
@@ -16,14 +18,12 @@ class AuthService {
       password: password,
     );
 
-    if (credential.user != null) {
-      await credential.user!.updateDisplayName(username);
-      await _ensureUserProfile(
-        credential.user!,
-        username: username,
-        provider: 'password',
-      );
-    }
+    await credential.user?.updateDisplayName(username);
+    await _ensureUserProfile(
+      credential.user!,
+      username: username,
+      provider: 'password',
+    );
 
     return credential;
   }
@@ -37,17 +37,47 @@ class AuthService {
       password: password,
     );
 
-    if (credential.user != null) {
-      await _ensureUserProfile(
-        credential.user!,
-        provider: 'password',
-      );
-    }
+    await _ensureUserProfile(
+      credential.user!,
+      provider: 'password',
+    );
 
     return credential;
   }
 
+  Future<UserCredential?> signInWithGoogle() async {
+    if (kIsWeb) {
+      final provider = GoogleAuthProvider();
+      provider.addScope('email');
+      final credential = await _auth.signInWithPopup(provider);
+      await _ensureUserProfile(
+        credential.user!,
+        provider: 'google',
+      );
+      return credential;
+    }
+
+    final googleUser = await _googleSignIn!.signIn();
+    if (googleUser == null) {
+      return null;
+    }
+
+    final googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+
+    final userCredential = await _auth.signInWithCredential(credential);
+    await _ensureUserProfile(
+      userCredential.user!,
+      provider: 'google',
+    );
+    return userCredential;
+  }
+
   Future<void> signOut() async {
+    await _googleSignIn?.signOut();
     await _auth.signOut();
   }
 
@@ -83,14 +113,12 @@ class AuthService {
         'lastLoginAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } on FirebaseException catch (e) {
-      // Allow login to proceed when offline; profile will sync later.
-      if (e.code == 'unavailable' || e.code == 'network-request-failed') {
+      // Allow login to proceed when Firestore is unavailable or permissions block profile sync.
+      if (e.code == 'unavailable' ||
+          e.code == 'network-request-failed' ||
+          e.code == 'permission-denied') {
         return;
       }
-      debugPrint('Firestore Error: ${e.code} - ${e.message}');
-      rethrow;
-    } catch (e) {
-      debugPrint('General Firestore Error: $e');
       rethrow;
     }
   }

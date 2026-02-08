@@ -8,7 +8,10 @@ import '../../widgets/bytestar/animated_space_background.dart';
 import '../../widgets/background/code_background.dart';
 import '../../widgets/bytestar/c_code_editor.dart';
 import '../../services/judge0_service.dart';
+import '../../services/mock_python_compiler.dart';
 import '../../services/mock_c_compiler.dart';
+
+
 import '../../services/gemini_service.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../utils/dialogue_queue.dart';
@@ -290,18 +293,26 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
                          "Error: $errorMsg\n"
                          "Objective: Provide a 1-sentence helpful hint to fix this. Be encouraging. Do not give the answer directly.";
           
+          
           final hint = await GeminiService().chat(prompt);
           
           if (!mounted) return;
-          if (_currentState == MissionState.failure) { // Only if still on failure screen
+          
+          // Check if Gemini returned an error message
+          bool isAiError = hint.startsWith("Connection error") || 
+                           hint.startsWith("I'm offline") || 
+                           hint.startsWith("Error accessing");
+
+          if (!isAiError && _currentState == MissionState.failure) { 
               _speak(hint);
-              // meaningful delay to let the voice finish before showing text? 
-              // The DialogueQueue handles the voice, but we can also popup the hint.
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                   content: Text("NOVA: $hint"),
                   backgroundColor: ByteStarTheme.accent,
                   duration: const Duration(seconds: 5),
               ));
+          } else {
+             // Fallback if Gemini fails or returns error
+             throw Exception("AI Service Unavailable: $hint");
           }
       } catch (e) {
           debugPrint("Gemini Hint Error: $e");
@@ -371,13 +382,18 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
           "Question: $query";
     }
 
-    final response = await GeminiService().chat(fullPrompt);
+    String response = await GeminiService().chat(fullPrompt);
 
     if (!mounted) return;
 
     setState(() {
       _isQueryingGemini = false;
     });
+
+    
+    if (response.startsWith("Connection error") || response.startsWith("I'm offline")) {
+        response = "I'm currently unable to access the neural network. Please check your internet connection or API configuration.";
+    }
 
     _speak(response);
 
@@ -694,6 +710,7 @@ class _MissionEngineScreenState extends State<MissionEngineScreen> {
             padding: const EdgeInsets.all(16),
             child: CCodeEditor(
               initialCode: _userCode,
+              filename: widget.mission.languageId == 71 ? 'main.py' : 'main.c',
               onCodeChanged: (val) => _userCode = val,
             ),
           ),

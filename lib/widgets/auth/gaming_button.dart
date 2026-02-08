@@ -11,7 +11,7 @@ class GamingButton extends StatefulWidget {
   const GamingButton({
     super.key,
     required this.text,
-    this.onPressed,
+    required this.onPressed,
     this.backgroundColor,
     this.textColor,
     this.isLoading = false,
@@ -43,9 +43,11 @@ class _GamingButtonState extends State<GamingButton> with SingleTickerProviderSt
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
-      cursor: SystemMouseCursors.click,
+      cursor: widget.onPressed == null || widget.isLoading
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: widget.onPressed,
+        onTap: widget.isLoading ? null : widget.onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: double.infinity,
@@ -62,30 +64,29 @@ class _GamingButtonState extends State<GamingButton> with SingleTickerProviderSt
                 ),
             ],
           ),
-          child: widget.isLoading
-              ? const Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.play_arrow_rounded,
-                        color: widget.textColor ?? Colors.white),
-                    const SizedBox(width: 8),
-                    Text(
-                      widget.text,
-                      style: AppTheme.buttonStyle
-                          .copyWith(color: widget.textColor ?? Colors.white),
-                    ),
-                  ],
-                ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+               if (widget.isLoading)
+                 SizedBox(
+                   width: 18,
+                   height: 18,
+                   child: CircularProgressIndicator(
+                     strokeWidth: 2,
+                     valueColor: AlwaysStoppedAnimation<Color>(
+                       widget.textColor ?? Colors.white,
+                     ),
+                   ),
+                 )
+               else
+                 Icon(Icons.play_arrow_rounded, color: widget.textColor ?? Colors.white),
+               const SizedBox(width: 8),
+               Text(
+                widget.text,
+                style: AppTheme.buttonStyle.copyWith(color: widget.textColor ?? Colors.white),
+              ),
+            ],
+          ),
         ),
       ),
     );

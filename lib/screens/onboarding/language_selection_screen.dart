@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/theme.dart';
 import '../../widgets/background/code_background.dart';
 import '../../widgets/onboarding/selection_card.dart';
+import '../../widgets/navigation/global_sidebar.dart';
+import '../../services/local_storage_service.dart';
 import 'story_mode_selection_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
@@ -10,7 +12,7 @@ class LanguageSelectionScreen extends StatefulWidget {
 
   const LanguageSelectionScreen({
     super.key,
-    required this.username,
+    this.username = '',
   });
 
   @override
@@ -20,6 +22,25 @@ class LanguageSelectionScreen extends StatefulWidget {
 class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   String? _selectedLanguage;
   bool _isTransitioning = false;
+  String _currentUsername = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUsername = widget.username;
+    if (_currentUsername.isEmpty) {
+      _loadUsername();
+    }
+  }
+
+  Future<void> _loadUsername() async {
+    final username = await LocalStorageService().getUsername();
+    if (mounted && username != null) {
+      setState(() {
+        _currentUsername = username;
+      });
+    }
+  }
 
   void _selectLanguage(String language) {
     if (_isTransitioning) return;
@@ -35,7 +56,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 StoryModeSelectionScreen(
-              username: widget.username,
+              username: _currentUsername,
               selectedLanguage: _selectedLanguage!,
             ),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -62,6 +83,18 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.ideBackground,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: GlobalSidebar(username: _currentUsername),
       body: Stack(
         children: [
           // Animated Background
@@ -76,11 +109,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                 Align(
                   alignment: Alignment.topLeft,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+                    padding: const EdgeInsets.only(left: 16.0, top: 48.0), // Adjust for appbar
+                    child: const SizedBox(), // Placeholder for the button that was here
                   ),
                 ),
                 const SizedBox(height: 10),

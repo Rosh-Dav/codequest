@@ -61,8 +61,17 @@ class _AnimatedSpaceBackgroundState extends State<AnimatedSpaceBackground>
   CustomPainter _getPainterForScene(SceneType type, double animationValue) {
     switch (type) {
       case SceneType.darkSpaceship:
+      case SceneType.commandSystem:
+      case SceneType.pilotConsole:
+      case SceneType.commandRouter:
+      case SceneType.moduleFactory:
+      case SceneType.blueprintLab:
+      case SceneType.displayPanels:
         return DarkSpaceshipPainter(animationValue: animationValue);
       case SceneType.engineRoom:
+      case SceneType.energyCore:
+      case SceneType.thrusterRoom:
+      case SceneType.memoryLab:
         return EngineRoomPainter(animationValue: animationValue);
       case SceneType.deepSpace:
       default:

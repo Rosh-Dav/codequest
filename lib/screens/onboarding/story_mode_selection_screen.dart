@@ -3,6 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../utils/theme.dart';
 import '../../widgets/background/code_background.dart';
 import '../../widgets/onboarding/selection_card.dart';
+import '../../widgets/navigation/global_sidebar.dart';
+import '../../services/local_storage_service.dart';
 import 'mentor_introduction_screen.dart';
 
 class StoryModeSelectionScreen extends StatefulWidget {
@@ -11,7 +13,7 @@ class StoryModeSelectionScreen extends StatefulWidget {
 
   const StoryModeSelectionScreen({
     super.key,
-    required this.username,
+    this.username = '',
     required this.selectedLanguage,
   });
 
@@ -22,6 +24,25 @@ class StoryModeSelectionScreen extends StatefulWidget {
 class _StoryModeSelectionScreenState extends State<StoryModeSelectionScreen> {
   String? _selectedStoryMode;
   bool _isTransitioning = false;
+  String _currentUsername = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUsername = widget.username;
+    if (_currentUsername.isEmpty) {
+      _loadUsername();
+    }
+  }
+
+  Future<void> _loadUsername() async {
+    final username = await LocalStorageService().getUsername();
+    if (mounted && username != null) {
+      setState(() {
+        _currentUsername = username;
+      });
+    }
+  }
 
   void _selectStoryMode(String storyMode) {
     if (_isTransitioning) return;
@@ -37,7 +58,7 @@ class _StoryModeSelectionScreenState extends State<StoryModeSelectionScreen> {
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
                 MentorIntroductionScreen(
-              username: widget.username,
+              username: _currentUsername,
               selectedLanguage: widget.selectedLanguage,
               selectedStoryMode: _selectedStoryMode!,
             ),
@@ -65,6 +86,18 @@ class _StoryModeSelectionScreenState extends State<StoryModeSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.ideBackground,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: GlobalSidebar(username: _currentUsername),
       body: Stack(
         children: [
           // Animated Background
@@ -79,11 +112,8 @@ class _StoryModeSelectionScreenState extends State<StoryModeSelectionScreen> {
                 Align(
                   alignment: Alignment.topLeft,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+                    padding: const EdgeInsets.only(left: 16.0, top: 48.0),
+                    child: const SizedBox(),
                   ),
                 ),
                 const SizedBox(height: 10),

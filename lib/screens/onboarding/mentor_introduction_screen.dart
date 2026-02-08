@@ -11,6 +11,11 @@ import '../login_screen.dart';
 import '../bytestar/mission_map_screen.dart';
 import '../runecity/rune_city_dashboard.dart';
 import '../runecity/rune_city_mission_map_screen.dart';
+import '../runecity_c/rune_city_c_mission_map_screen.dart'; // Add this line
+import '../bytestar_python/opening_cinematic_screen.dart'; // Import Python Cinematic
+import '../bytestar_python/python_mission_map_screen.dart'; // Import Python Map
+import '../../widgets/navigation/global_sidebar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MentorIntroductionScreen extends StatefulWidget {
   final String username;
@@ -91,24 +96,59 @@ class _MentorIntroductionScreenState extends State<MentorIntroductionScreen> {
     await _flutterTts.speak(text);
   }
 
-  void _beginJourney() {
+  Future<void> _beginJourney() async {
     // Handle both "Byte Star Arena" (UI) and "ByteStar Arena" (Internal)
     if (widget.selectedStoryMode == 'Byte Star Arena' || widget.selectedStoryMode == 'ByteStar Arena') {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => MissionMapScreen(username: widget.username),
-        ),
-      );
-    } else {
-      if (widget.selectedStoryMode == 'Rune City Quest' && widget.selectedLanguage == 'Python') {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => RuneCityMissionMapScreen(username: widget.username),
-          ),
-        );
-        return;
+      if (widget.selectedLanguage == 'Python') {
+          // Check if story started
+          final prefs = await SharedPreferences.getInstance();
+          final storyStarted = prefs.getBool('python_story_started') ?? false;
+
+          if (!mounted) return;
+          
+          if (!storyStarted) {
+             Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => OpeningCinematicScreen(username: widget.username),
+              ),
+            );
+          } else {
+             Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => PythonMissionMapScreen(username: widget.username),
+              ),
+            );
+          }
+      } else {
+          // Default C++ path
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => MissionMapScreen(
+                username: widget.username,
+                selectedLanguage: widget.selectedLanguage,
+              ),
+            ),
+          );
       }
-      // Navigate to Rune City Dashboard
+    } else {
+      if (widget.selectedStoryMode == 'Rune City Quest') {
+        if (widget.selectedLanguage == 'Python') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => RuneCityMissionMapScreen(username: widget.username),
+            ),
+          );
+          return;
+        } else if (widget.selectedLanguage == 'C') {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => RuneCityCMissionMapScreen(username: widget.username),
+            ),
+          );
+          return;
+        }
+      }
+      // Navigate to Rune City Dashboard (Fallback)
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => RuneCityDashboard(
@@ -133,6 +173,18 @@ class _MentorIntroductionScreenState extends State<MentorIntroductionScreen> {
     
     return Scaffold(
       backgroundColor: isByteStar ? ByteStarTheme.primary : AppTheme.ideBackground,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: GlobalSidebar(username: widget.username),
       body: Stack(
         children: [
           // Background
@@ -160,6 +212,7 @@ class _MentorIntroductionScreenState extends State<MentorIntroductionScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 60),
                   const Spacer(),
 
                   // Mentor Avatar

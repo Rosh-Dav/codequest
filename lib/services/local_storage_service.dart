@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/story_state.dart';
+import 'sync_service.dart';
+import 'bytestar/reward_service.dart';
+import 'story_state_service.dart';
 
 /// Service for managing local storage operations using SharedPreferences
 class LocalStorageService {
@@ -14,6 +17,8 @@ class LocalStorageService {
   static final LocalStorageService _instance = LocalStorageService._internal();
   factory LocalStorageService() => _instance;
   LocalStorageService._internal();
+
+  final SyncService _syncService = SyncService();
 
   SharedPreferences? _prefs;
 
@@ -35,7 +40,9 @@ class LocalStorageService {
   /// Save username
   Future<bool> saveUsername(String username) async {
     final prefs = await _preferences;
-    return prefs.setString(_keyUsername, username);
+    final success = await prefs.setString(_keyUsername, username);
+    if (success) _syncService.syncPreferences(username: username);
+    return success;
   }
 
   /// Get username
@@ -47,7 +54,9 @@ class LocalStorageService {
   /// Save selected language
   Future<bool> saveSelectedLanguage(String language) async {
     final prefs = await _preferences;
-    return prefs.setString(_keySelectedLanguage, language);
+    final success = await prefs.setString(_keySelectedLanguage, language);
+    if (success) _syncService.syncPreferences(selectedLanguage: language);
+    return success;
   }
 
   /// Get selected language
@@ -59,7 +68,9 @@ class LocalStorageService {
   /// Save selected story mode
   Future<bool> saveSelectedStoryMode(String storyMode) async {
     final prefs = await _preferences;
-    return prefs.setString(_keySelectedStoryMode, storyMode);
+    final success = await prefs.setString(_keySelectedStoryMode, storyMode);
+    if (success) _syncService.syncPreferences(selectedStoryMode: storyMode);
+    return success;
   }
 
   /// Get selected story mode
@@ -86,7 +97,9 @@ class LocalStorageService {
   Future<bool> saveStoryState(StoryState state) async {
     final prefs = await _preferences;
     final jsonString = jsonEncode(state.toJson());
-    return prefs.setString(_keyStoryState, jsonString);
+    final success = await prefs.setString(_keyStoryState, jsonString);
+    if (success) _syncService.syncStoryState(state);
+    return success;
   }
 
   /// Get story state
@@ -116,6 +129,19 @@ class LocalStorageService {
   /// Clear only story progress (keep user preferences)
   Future<bool> clearStoryProgress() async {
     final prefs = await _preferences;
-    return prefs.remove(_keyStoryState);
+    
+    // 1. Clear LocalStorageStory keys
+    await prefs.remove(_keyStoryState);
+    
+    // 2. Clear RewardService keys
+    await RewardService().resetRewards();
+    
+    // 3. Clear StoryStateService keys
+    await StoryStateService().resetStory();
+    
+    // 4. Force sync service to clear remote if possible (optional, but good for consistency)
+    // _syncService.clearRemoteProgress(); // If implemented
+    
+    return true;
   }
 }

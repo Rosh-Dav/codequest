@@ -25,6 +25,12 @@ import 'screens/phase1/phase1_mid_status_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/theme.dart';
 import 'services/tts_service.dart';
+import 'screens/settings_screen.dart';
+import 'screens/help_screen.dart';
+import 'screens/bytestar/profile_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/onboarding/language_selection_screen.dart';
+import 'screens/onboarding/story_mode_selection_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +100,12 @@ class CodeQuestApp extends StatelessWidget {
         '/story/phase1/status': (context) => const Phase1StatusScreen(),
         '/story/phase1/mid-status': (context) => const Phase1MidStatusScreen(),
         '/home': (context) => const HomeScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/help': (context) => const HelpScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/onboarding/language': (context) => LanguageSelectionScreen(username: ''),
+        '/onboarding/story': (context) => StoryModeSelectionScreen(username: '', selectedLanguage: ''),
+        '/login': (context) => const LoginScreen(),
       },
     );
   }
